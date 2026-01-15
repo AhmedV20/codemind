@@ -1,0 +1,276 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* GitHub AI Analyzer - Global Styles */
+
+/* Reset for shadow DOM isolation */
+.github-ai-analyzer-root {
+  all: initial;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', Helvetica, Arial, sans-serif;
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--gai-text-color, #1f2328);
+}
+
+/* CSS Custom Properties for theme switching */
+:root {
+  --gai-bg-primary: #ffffff;
+  --gai-bg-secondary: #f6f8fa;
+  --gai-bg-tertiary: #eff2f5;
+  --gai-border-color: rgba(27, 31, 36, 0.15);
+  --gai-border-muted: rgba(27, 31, 36, 0.1);
+  --gai-text-color: #1f2328;
+  --gai-text-muted: #656d76;
+  --gai-text-subtle: #6e7781;
+  --gai-accent-color: #0969da;
+  --gai-accent-muted: rgba(9, 105, 218, 0.4);
+  --gai-success-color: #1a7f37;
+  --gai-danger-color: #d1242f;
+  --gai-warning-color: #9a6700;
+  --gai-shadow-sm: 0 1px 0 rgba(27, 31, 36, 0.04);
+  --gai-shadow-md: 0 3px 6px rgba(140, 149, 159, 0.15);
+  --gai-shadow-lg: 0 8px 24px rgba(140, 149, 159, 0.2);
+  
+  /* Liquid Glass Variables - Light */
+  --glass-bg: rgba(255, 255, 255, 0.75);
+  --glass-bg-hover: rgba(255, 255, 255, 0.9);
+  --glass-border: rgba(255, 255, 255, 0.4);
+  --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
+  --glass-shadow-lg: 0 16px 48px rgba(0, 0, 0, 0.12);
+  --glass-blur: blur(20px);
+  --glass-active-bg: rgba(0, 0, 0, 0.85);
+  --glass-active-text: #ffffff;
+  --glass-inactive-text: rgba(0, 0, 0, 0.6);
+  --nav-pill-bg: rgba(245, 245, 247, 0.9);
+  --nav-pill-shadow: 0 4px 24px rgba(0, 0, 0, 0.1), 0 0 0 1px rgba(0, 0, 0, 0.05);
+}
+
+/* Dark theme */
+[data-color-mode="dark"] .github-ai-analyzer-root,
+.github-ai-analyzer-root.dark {
+  --gai-bg-primary: #0d1117;
+  --gai-bg-secondary: #161b22;
+  --gai-bg-tertiary: #21262d;
+  --gai-border-color: rgba(240, 246, 252, 0.1);
+  --gai-border-muted: rgba(240, 246, 252, 0.05);
+  --gai-text-color: #e6edf3;
+  --gai-text-muted: #8d96a0;
+  --gai-text-subtle: #6e7681;
+  --gai-accent-color: #4493f8;
+  --gai-accent-muted: rgba(56, 139, 253, 0.4);
+  --gai-success-color: #3fb950;
+  --gai-danger-color: #f85149;
+  --gai-warning-color: #d29922;
+  --gai-shadow-sm: 0 0 transparent;
+  --gai-shadow-md: 0 3px 6px rgba(0, 0, 0, 0.3);
+  --gai-shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.4);
+  
+  /* Liquid Glass Variables - Dark */
+  --glass-bg: rgba(30, 30, 35, 0.8);
+  --glass-bg-hover: rgba(40, 40, 45, 0.9);
+  --glass-border: rgba(255, 255, 255, 0.1);
+  --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+  --glass-shadow-lg: 0 16px 48px rgba(0, 0, 0, 0.4);
+  --glass-blur: blur(20px);
+  --glass-active-bg: rgba(255, 255, 255, 0.95);
+  --glass-active-text: #000000;
+  --glass-inactive-text: rgba(255, 255, 255, 0.6);
+  --nav-pill-bg: rgba(30, 30, 35, 0.9);
+  --nav-pill-shadow: 0 4px 24px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(255, 255, 255, 0.1);
+}
+
+/* Button base styles matching GitHub */
+.gai-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  height: 32px;
+  padding: 0 12px;
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 20px;
+  white-space: nowrap;
+  cursor: pointer;
+  user-select: none;
+  border: 1px solid var(--gai-border-color);
+  border-radius: 6px;
+  background-color: var(--gai-bg-secondary);
+  color: var(--gai-text-color);
+  transition: background-color 0.2s, border-color 0.2s;
+}
+
+.gai-btn:hover {
+  background-color: var(--gai-bg-tertiary);
+  border-color: var(--gai-border-color);
+}
+
+.gai-btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.gai-btn-primary {
+  background-color: var(--gai-accent-color);
+  border-color: var(--gai-accent-color);
+  color: #ffffff;
+}
+
+.gai-btn-primary:hover {
+  background-color: #0860ca;
+  border-color: #0860ca;
+}
+
+/* Panel styles */
+.gai-panel {
+  position: fixed;
+  top: 0;
+  right: 0;
+  width: 450px;
+  height: 100vh;
+  background-color: var(--gai-bg-primary);
+  border-left: 1px solid var(--gai-border-color);
+  box-shadow: var(--gai-shadow-lg);
+  z-index: 9999;
+  display: flex;
+  flex-direction: column;
+  animation: gai-slide-in 0.3s ease-out;
+}
+
+@keyframes gai-slide-in {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+/* Backdrop */
+.gai-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  z-index: 9998;
+  animation: gai-fade-in 0.2s ease-out;
+}
+
+@keyframes gai-fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+/* Skeleton loader */
+.gai-skeleton {
+  background: linear-gradient(
+    90deg,
+    var(--gai-bg-secondary) 25%,
+    var(--gai-bg-tertiary) 50%,
+    var(--gai-bg-secondary) 75%
+  );
+  background-size: 200% 100%;
+  animation: gai-skeleton-shimmer 1.5s infinite;
+  border-radius: 4px;
+}
+
+@keyframes gai-skeleton-shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+/* Spinner */
+.gai-spinner {
+  animation: gai-spin 1s linear infinite;
+}
+
+@keyframes gai-spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+/* Markdown content styling */
+.gai-markdown h2 {
+  font-size: 18px;
+  font-weight: 600;
+  margin-top: 20px;
+  margin-bottom: 12px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--gai-border-muted);
+}
+
+.gai-markdown h3 {
+  font-size: 16px;
+  font-weight: 600;
+  margin-top: 16px;
+  margin-bottom: 8px;
+}
+
+.gai-markdown p {
+  margin-bottom: 12px;
+}
+
+.gai-markdown ul {
+  list-style: disc;
+  padding-left: 20px;
+  margin-bottom: 12px;
+}
+
+.gai-markdown li {
+  margin-bottom: 4px;
+}
+
+.gai-markdown code {
+  background-color: var(--gai-bg-secondary);
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-family: ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, monospace;
+  font-size: 85%;
+}
+
+.gai-markdown pre {
+  background-color: var(--gai-bg-secondary);
+  padding: 12px;
+  border-radius: 6px;
+  overflow-x: auto;
+  margin-bottom: 12px;
+}
+
+.gai-markdown pre code {
+  background: none;
+  padding: 0;
+}
+
+/* Chat styles */
+.gai-chat-message {
+  padding: 10px 14px;
+  border-radius: 12px;
+  max-width: 85%;
+  margin-bottom: 8px;
+}
+
+.gai-chat-message-user {
+  background-color: var(--gai-accent-color);
+  color: #ffffff;
+  margin-left: auto;
+  border-bottom-right-radius: 4px;
+}
+
+.gai-chat-message-assistant {
+  background-color: var(--gai-bg-secondary);
+  color: var(--gai-text-color);
+  border-bottom-left-radius: 4px;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .gai-panel {
+    width: 100%;
+    border-left: none;
+  }
+}
