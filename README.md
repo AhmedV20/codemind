@@ -5,12 +5,61 @@
 <h3 align="center">AI-Powered Repository Analyzer</h3>
 <p align="center">Understand any GitHub repository in seconds with intelligent AI analysis.</p>
 
-<p align="center">
-  <a href="https://github.com/AhmedV20/codemind/actions/workflows/ci.yml"><img src="https://img.shields.io/github/actions/workflow/status/AhmedV20/codemind/ci.yml?style=flat-square&label=build" alt="Build"></a>
-  <a href="https://github.com/AhmedV20/codemind/stargazers"><img src="https://img.shields.io/github/stars/AhmedV20/codemind?style=flat-square" alt="Stars"></a>
-  <a href="PRIVACY.md"><img src="https://img.shields.io/badge/privacy-policy-green?style=flat-square" alt="Privacy"></a>
-  <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue?style=flat-square" alt="License"></a>
-</p>
+<div align="center">
+
+[![Stars](https://img.shields.io/github/stars/AhmedV20/codemind?style=social)](https://github.com/AhmedV20/codemind/stargazers)
+[![Build](https://img.shields.io/github/actions/workflow/status/AhmedV20/codemind/ci.yml?label=CI/Build)](https://github.com/AhmedV20/codemind/actions)
+[![Privacy](https://img.shields.io/badge/Privacy-Protected-green)](PRIVACY.md)
+[![License](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+
+</div>
+
+---
+
+## 🚀 Installation
+
+<div align="center">
+
+### 📦 Download CodeMind
+
+<table>
+<tr>
+<td align="center" width="50%">
+<br>
+<img src="https://img.shields.io/badge/Edge-Coming_Soon-0078D7?style=for-the-badge&logo=microsoftedge&logoColor=white" alt="Edge">
+<br><br>
+<p><b>🔄 Under Review</b></p>
+<p>Our Edge extension is currently being reviewed by Microsoft. Check back soon!</p>
+</td>
+<td align="center" width="50%">
+<br>
+<img src="https://img.shields.io/badge/Firefox-Coming_Soon-FF7139?style=for-the-badge&logo=firefoxbrowser&logoColor=white" alt="Firefox">
+<br><br>
+<p><b>📝 In Progress</b></p>
+<p>Firefox submission is underway. We'll notify you once it's available!</p>
+</td>
+</tr>
+</table>
+
+<br>
+
+> 💡 **Want to try CodeMind now?** See the [Manual Installation](#-manual-installation) guide below for Chrome/Edge.
+
+</div>
+
+---
+
+### 💡 What is CodeMind?
+
+CodeMind is a browser extension that uses AI to analyze GitHub repositories. It fetches the repository structure, README, dependencies, and key files, then generates a comprehensive summary explaining what the project does, who it's for, and how to use it.
+
+**How to use:**
+
+1. Install the extension from your browser's store (or manually - see the [manual installation](#-manual-installation) guide)
+2. Navigate to any GitHub repository
+3. Click the **CodeMind** button next to the Insights tab
+4. Configure your AI provider in the settings panel
+5. Click **Analyze Repository** to get your summary
 
 ---
 
@@ -21,27 +70,6 @@
 3. **Interactive Chat** — Ask follow-up questions about the repository
 4. **Multiple Providers** — Choose Gemini, Claude, or HuggingFace
 5. **Smart Caching** — Results saved for 24 hours
-
----
-
-## 🚀 Get Started
-
-<p>
-  <a href="#"><img src="https://img.shields.io/badge/Edge-Install-0078D7?style=for-the-badge&logo=microsoftedge&logoColor=white" alt="Edge"></a>
-  <a href="#"><img src="https://img.shields.io/badge/Firefox-Install-FF7139?style=for-the-badge&logo=firefox&logoColor=white" alt="Firefox"></a>
-</p>
-
-### What is CodeMind?
-
-CodeMind is a browser extension that uses AI to analyze GitHub repositories. It fetches the repository structure, README, dependencies, and key files, then generates a comprehensive summary explaining what the project does, who it's for, and how to use it.
-
-**How to use:**
-
-1. Install the extension from your browser's store
-2. Navigate to any GitHub repository
-3. Click the **CodeMind** button next to the Insights tab
-4. Configure your AI provider in the settings panel
-5. Click **Analyze Repository** to get your summary
 
 ---
 
@@ -59,6 +87,7 @@ Read the full [Privacy Policy](PRIVACY.md).
 
 ## 💻 Development
 
+### 🛠️ Setup
 ```bash
 # Clone the repository
 git clone https://github.com/AhmedV20/codemind.git
@@ -74,10 +103,39 @@ npm run dev
 npm run build
 ```
 
-**Load unpacked extension:**
-1. Go to `edge://extensions` or `about:debugging` (Firefox)
-2. Enable Developer mode
-3. Load the `dist` folder
+### 🔧 Manual Installation
+
+<details>
+<summary><b>Click to expand installation steps</b></summary>
+
+<br>
+
+**Step 1: Build the extension**
+```bash
+npm run build
+```
+
+**Step 2: Load in Chrome/Edge**
+
+1. Open your browser and navigate to:
+   - **Chrome**: `chrome://extensions`
+   - **Edge**: `edge://extensions`
+
+2. Enable **Developer mode** (toggle in top-right corner)
+
+3. Click **"Load unpacked"**
+
+4. Select the `dist` folder from the project directory
+
+5. CodeMind is now installed! 🎉
+
+**Step 3: Configure**
+
+1. Click the CodeMind extension icon in your toolbar
+2. Add your AI API key (Gemini, Claude, or HuggingFace)
+3. Navigate to any GitHub repo and start analyzing!
+
+</details>
 
 ---
 
@@ -89,4 +147,4 @@ Contributions are welcome! Please read [CONTRIBUTING.md](CONTRIBUTING.md) for gu
 
 ## 📄 License
 
-[MIT](LICENSE) © 2025 CodeMind
+[MIT](LICENSE) © 2026 CodeMind
