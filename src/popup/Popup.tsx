@@ -1,177 +1,110 @@
 import React from 'react';
 import { createRoot } from 'react-dom/client';
-import { Github, Twitter, ExternalLink, Heart } from 'lucide-react';
+import { Github, ExternalLink } from 'lucide-react';
 
 const Popup: React.FC = () => {
     return (
         <div style={{
             width: '280px',
-            padding: '0',
+            padding: '10px',
             fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans", Helvetica, Arial, sans-serif',
             fontSize: '14px',
-            backgroundColor: '#0d1117',
+            background: 'linear-gradient(180deg, #0d1117 0%, #161b22 100%)',
             color: '#e6edf3',
-            overflow: 'hidden',
         }}>
-            {/* Header with gradient */}
+            {/* Card with Glass Effect */}
             <div style={{
-                background: 'linear-gradient(135deg, #8b5cf6 0%, #6366f1 50%, #3b82f6 100%)',
-                padding: '24px 20px',
-                textAlign: 'center',
-                position: 'relative',
-                overflow: 'hidden',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '16px',
+                padding: '16px',
+                background: 'rgba(139, 92, 246, 0.08)',
+                backdropFilter: 'blur(20px)',
+                WebkitBackdropFilter: 'blur(20px)',
+                borderRadius: '14px',
+                border: '1px solid rgba(139, 92, 246, 0.2)',
+                boxShadow: '0 8px 32px rgba(0, 0, 0, 0.3)',
             }}>
-                {/* Subtle pattern overlay */}
-                <div style={{
-                    position: 'absolute',
-                    top: 0,
-                    left: 0,
-                    right: 0,
-                    bottom: 0,
-                    opacity: 0.1,
-                    backgroundImage: 'radial-gradient(circle at 30% 40%, rgba(255,255,255,0.4) 0%, transparent 50%)',
-                }} />
-
                 {/* Logo */}
-                <div style={{ position: 'relative', zIndex: 1 }}>
-                    <img
-                        src={chrome.runtime.getURL('icons/icon128.png')}
-                        alt="CodeMind"
-                        style={{
-                            width: '64px',
-                            height: '64px',
-                            borderRadius: '16px',
-                            marginBottom: '12px',
-                            boxShadow: '0 4px 16px rgba(0, 0, 0, 0.3)',
-                        }}
-                    />
+                <img
+                    src={chrome.runtime.getURL('icons/icon128.png')}
+                    alt="CodeMind"
+                    style={{
+                        width: '48px',
+                        height: '48px',
+                        borderRadius: '12px',
+                        boxShadow: '0 4px 16px rgba(139, 92, 246, 0.4)',
+                    }}
+                />
+
+                {/* Name + Description */}
+                <div style={{ flex: 1 }}>
                     <h1 style={{
                         margin: 0,
-                        fontSize: '20px',
+                        fontSize: '18px',
                         fontWeight: 700,
-                        color: '#fff',
-                        letterSpacing: '-0.02em',
+                        background: 'linear-gradient(135deg, #8b5cf6 0%, #3b82f6 100%)',
+                        backgroundClip: 'text',
+                        WebkitBackgroundClip: 'text',
+                        WebkitTextFillColor: 'transparent',
                     }}>
                         CodeMind
                     </h1>
                     <p style={{
-                        margin: '6px 0 0',
+                        margin: '4px 0 0',
                         fontSize: '12px',
-                        color: 'rgba(255, 255, 255, 0.8)',
-                        fontWeight: 400,
+                        color: '#8d96a0',
+                        lineHeight: 1.4,
                     }}>
-                        AI Repository Analyzer
+                        AI-powered GitHub repository analyzer
                     </p>
                 </div>
             </div>
 
-            {/* Description */}
-            <div style={{
-                padding: '16px 20px',
-                textAlign: 'center',
-                borderBottom: '1px solid #21262d',
-            }}>
-                <p style={{
-                    margin: 0,
-                    fontSize: '13px',
-                    color: '#8b949e',
-                    lineHeight: 1.5,
-                }}>
-                    Understand any GitHub repository instantly with AI-powered analysis.
-                </p>
-            </div>
-
-            {/* Quick Links */}
-            <div style={{
-                padding: '12px 16px',
-                display: 'flex',
-                flexDirection: 'column',
-                gap: '4px',
-            }}>
-                <a
-                    href="https://github.com/AhmedV20/codemind"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '10px',
-                        padding: '10px 12px',
-                        borderRadius: '8px',
-                        color: '#e6edf3',
-                        textDecoration: 'none',
-                        fontSize: '13px',
-                        fontWeight: 500,
-                        transition: 'background-color 0.2s',
-                        backgroundColor: 'transparent',
-                    }}
-                    onMouseEnter={(e) => {
-                        e.currentTarget.style.backgroundColor = '#21262d';
-                    }}
-                    onMouseLeave={(e) => {
-                        e.currentTarget.style.backgroundColor = 'transparent';
-                    }}
-                >
-                    <Github size={18} style={{ color: '#8b949e' }} />
-                    <span>View on GitHub</span>
-                    <ExternalLink size={14} style={{ marginLeft: 'auto', color: '#8b949e' }} />
-                </a>
-
-                <a
-                    href="https://twitter.com/yourusername"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '10px',
-                        padding: '10px 12px',
-                        borderRadius: '8px',
-                        color: '#e6edf3',
-                        textDecoration: 'none',
-                        fontSize: '13px',
-                        fontWeight: 500,
-                        transition: 'background-color 0.2s',
-                        backgroundColor: 'transparent',
-                    }}
-                    onMouseEnter={(e) => {
-                        e.currentTarget.style.backgroundColor = '#21262d';
-                    }}
-                    onMouseLeave={(e) => {
-                        e.currentTarget.style.backgroundColor = 'transparent';
-                    }}
-                >
-                    <Twitter size={18} style={{ color: '#1d9bf0' }} />
-                    <span>Follow on X</span>
-                    <ExternalLink size={14} style={{ marginLeft: 'auto', color: '#8b949e' }} />
-                </a>
-            </div>
-
-            {/* Footer */}
-            <div style={{
-                padding: '12px 20px',
-                borderTop: '1px solid #21262d',
-                textAlign: 'center',
-                backgroundColor: '#010409',
-            }}>
-                <p style={{
-                    margin: 0,
-                    fontSize: '11px',
-                    color: '#6e7681',
+            {/* GitHub Link */}
+            <a
+                href="https://github.com/AhmedV20/codemind"
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    gap: '4px',
-                }}>
-                    Made with <Heart size={12} style={{ color: '#f85149' }} /> by Ahmed
-                </p>
-                <p style={{
-                    margin: '4px 0 0',
-                    fontSize: '11px',
-                    color: '#484f58',
-                }}>
-                    v1.0.0
-                </p>
+                    gap: '8px',
+                    marginTop: '16px',
+                    padding: '12px 16px',
+                    background: 'rgba(255, 255, 255, 0.05)',
+                    backdropFilter: 'blur(10px)',
+                    border: '1px solid rgba(255, 255, 255, 0.1)',
+                    borderRadius: '10px',
+                    color: '#e6edf3',
+                    textDecoration: 'none',
+                    fontSize: '13px',
+                    fontWeight: 500,
+                    transition: 'all 0.2s ease',
+                }}
+                onMouseEnter={(e) => {
+                    e.currentTarget.style.background = 'rgba(255, 255, 255, 0.08)';
+                    e.currentTarget.style.borderColor = 'rgba(139, 92, 246, 0.4)';
+                }}
+                onMouseLeave={(e) => {
+                    e.currentTarget.style.background = 'rgba(255, 255, 255, 0.05)';
+                    e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.1)';
+                }}
+            >
+                <Github size={16} />
+                View on GitHub
+                <ExternalLink size={12} style={{ opacity: 0.6 }} />
+            </a>
+
+            {/* Footer */}
+            <div style={{
+                marginTop: '16px',
+                textAlign: 'center',
+                fontSize: '11px',
+                color: '#484f58',
+            }}>
+                Made with ❤️ by AhmedV20
             </div>
         </div>
     );

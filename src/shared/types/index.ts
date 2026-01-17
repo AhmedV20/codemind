@@ -136,6 +136,7 @@ export enum AIProvider {
     CLAUDE = 'claude',
     GEMINI = 'gemini',
     HUGGINGFACE = 'huggingface',
+    OPENROUTER = 'openrouter',
 }
 
 export interface ProviderConfig {
@@ -159,6 +160,10 @@ export interface AIProviderSettings {
             apiKey: string;
             model: string;
         };
+        [AIProvider.OPENROUTER]: {
+            apiKey: string;
+            model: string;
+        };
     };
 }
 
@@ -177,6 +182,9 @@ export interface ExtensionSettings {
         panelPosition: 'right' | 'left';
         theme: 'auto' | 'light' | 'dark';
         fontSize: 'small' | 'medium' | 'large';
+    };
+    github: {
+        token: string;
     };
 }
 

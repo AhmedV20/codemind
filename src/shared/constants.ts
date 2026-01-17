@@ -15,7 +15,11 @@ export const DEFAULT_SETTINGS: ExtensionSettings = {
             },
             [AIProvider.HUGGINGFACE]: {
                 apiKey: '',
-                model: 'Qwen/Qwen2.5-72B-Instruct',
+                model: 'openai/gpt-oss-20b',
+            },
+            [AIProvider.OPENROUTER]: {
+                apiKey: '',
+                model: 'google/gemini-2.0-flash-exp:free',
             },
         },
     },
@@ -29,6 +33,9 @@ export const DEFAULT_SETTINGS: ExtensionSettings = {
         theme: 'auto',
         fontSize: 'medium',
     },
+    github: {
+        token: '',
+    },
 };
 
 // API endpoints
@@ -37,6 +44,7 @@ export const API_ENDPOINTS = {
     CLAUDE_API: 'https://api.anthropic.com/v1',
     GEMINI_API: 'https://generativelanguage.googleapis.com/v1beta',
     HUGGINGFACE_API: 'https://router.huggingface.co/v1',
+    OPENROUTER_API: 'https://openrouter.ai/api/v1',
 };
 
 // Storage keys

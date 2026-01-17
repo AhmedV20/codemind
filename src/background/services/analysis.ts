@@ -28,6 +28,11 @@ export class AnalysisService {
         // Get settings
         const settings = await settingsManager.get();
 
+        // Set GitHub token if available
+        if (settings.github?.token) {
+            githubClient.setToken(settings.github.token);
+        }
+
         // Create AI provider
         const provider = createProvider(settings);
 

@@ -3,6 +3,7 @@ import { X, Home, Settings, Brain, RefreshCw, ChevronDown, Sparkles } from 'luci
 import { useAnalysisStore } from '../hooks/useAnalysis';
 import HomeTab from './HomeTab';
 import SettingsTab from './SettingsTab';
+import ExportDropdown from './ExportDropdown';
 
 const AnalysisPanel: React.FC = () => {
     const {
@@ -127,34 +128,42 @@ const AnalysisPanel: React.FC = () => {
                         </div>
                     </div>
 
-                    {/* Close button */}
-                    <button
-                        onClick={hidePanel}
-                        style={{
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            width: '36px',
-                            height: '36px',
-                            border: 'none',
-                            borderRadius: '50%',
-                            backgroundColor: 'var(--gai-bg-secondary)',
-                            cursor: 'pointer',
-                            color: 'var(--gai-text-muted)',
-                            transition: 'all 0.2s ease',
-                        }}
-                        title="Close (Esc)"
-                        onMouseEnter={(e) => {
-                            e.currentTarget.style.backgroundColor = 'var(--gai-bg-tertiary)';
-                            e.currentTarget.style.color = 'var(--gai-text-color)';
-                        }}
-                        onMouseLeave={(e) => {
-                            e.currentTarget.style.backgroundColor = 'var(--gai-bg-secondary)';
-                            e.currentTarget.style.color = 'var(--gai-text-muted)';
-                        }}
-                    >
-                        <X size={18} />
-                    </button>
+                    {/* Header Actions (right side) */}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        {/* Export Dropdown - Show when analysis exists */}
+                        {(status === 'complete' || analysis) && (
+                            <ExportDropdown analysis={analysis} repoInfo={repoInfo} />
+                        )}
+
+                        {/* Close button */}
+                        <button
+                            onClick={hidePanel}
+                            style={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                width: '36px',
+                                height: '36px',
+                                border: 'none',
+                                borderRadius: '50%',
+                                backgroundColor: 'var(--gai-bg-secondary)',
+                                cursor: 'pointer',
+                                color: 'var(--gai-text-muted)',
+                                transition: 'all 0.2s ease',
+                            }}
+                            title="Close (Esc)"
+                            onMouseEnter={(e) => {
+                                e.currentTarget.style.backgroundColor = 'var(--gai-bg-tertiary)';
+                                e.currentTarget.style.color = 'var(--gai-text-color)';
+                            }}
+                            onMouseLeave={(e) => {
+                                e.currentTarget.style.backgroundColor = 'var(--gai-bg-secondary)';
+                                e.currentTarget.style.color = 'var(--gai-text-muted)';
+                            }}
+                        >
+                            <X size={18} />
+                        </button>
+                    </div>
                 </div>
 
                 {/* Tab Content - Scrollable */}

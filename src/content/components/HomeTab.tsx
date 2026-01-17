@@ -1,8 +1,11 @@
-import React, { useRef, useEffect } from 'react';
+import React, { useRef, useEffect, useMemo, useState } from 'react';
 import ReactMarkdown from 'react-markdown';
-import { Brain, Sparkles, AlertCircle, Settings, MessageCircle, Package, Key, ChevronDown } from 'lucide-react';
+import { Brain, Sparkles, AlertCircle, Settings, MessageCircle, Package, Key, ChevronDown, Cpu, Check } from 'lucide-react';
 import { useAnalysisStore } from '../hooks/useAnalysis';
 import ChatInterface from './ChatInterface';
+import ThinkingBox from './ThinkingBox';
+import GitHubTokenModal from './GitHubTokenModal';
+import { parseThinkingContent } from '../utils/thinkingParser';
 
 const HomeTab: React.FC = () => {
     const {
@@ -16,10 +19,14 @@ const HomeTab: React.FC = () => {
         settings,
         startAnalysis,
         setActiveTab,
-        setSelectedProvider
+        setSelectedProvider,
+        saveGitHubToken
     } = useAnalysisStore();
 
-    const [showChat, setShowChat] = React.useState(false);
+    const [showChat, setShowChat] = useState(false);
+    const [showRateLimitModal, setShowRateLimitModal] = useState(false);
+    const [providerDropdownOpen, setProviderDropdownOpen] = useState(false);
+    const providerDropdownRef = useRef<HTMLDivElement>(null);
     const contentRef = useRef<HTMLDivElement>(null);
     const bottomRef = useRef<HTMLDivElement>(null);
 
@@ -29,6 +36,13 @@ const HomeTab: React.FC = () => {
     const isIdle = status === 'idle';
     const needsApiKey = error === 'API_KEY_REQUIRED';
     const noProvidersConfigured = availableProviders.length === 0;
+    const isRateLimitError = error?.includes('rate limit') || error?.includes('Rate limit');
+
+    // Parse thinking content from AI output
+    const parsedContent = useMemo(() => {
+        if (!displayContent) return null;
+        return parseThinkingContent(displayContent);
+    }, [displayContent]);
 
     // Auto-scroll during streaming
     useEffect(() => {
@@ -36,6 +50,24 @@ const HomeTab: React.FC = () => {
             bottomRef.current.scrollIntoView({ behavior: 'smooth', block: 'end' });
         }
     }, [streamingContent, isStreaming]);
+
+    // Close dropdown on click outside
+    useEffect(() => {
+        const handleClickOutside = (event: MouseEvent) => {
+            if (providerDropdownRef.current && !providerDropdownRef.current.contains(event.target as Node)) {
+                setProviderDropdownOpen(false);
+            }
+        };
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, []);
+
+    // Auto-show rate limit modal when error detected
+    useEffect(() => {
+        if (isRateLimitError) {
+            setShowRateLimitModal(true);
+        }
+    }, [isRateLimitError]);
 
     // No API keys configured - first time setup
     if (isIdle && !displayContent && noProvidersConfigured) {
@@ -47,7 +79,7 @@ const HomeTab: React.FC = () => {
                 justifyContent: 'center',
                 padding: '40px 24px',
                 textAlign: 'center',
-                minHeight: '300px',
+                flex: 1,
             }}>
                 <div style={{
                     width: '80px',
@@ -138,7 +170,7 @@ const HomeTab: React.FC = () => {
                 justifyContent: 'center',
                 padding: '40px 24px',
                 textAlign: 'center',
-                minHeight: '300px',
+                flex: 1,
             }}>
                 <div style={{
                     width: '80px',
@@ -174,50 +206,84 @@ const HomeTab: React.FC = () => {
                     </p>
                 )}
 
-                {/* Provider selector - only show if 2+ providers have API keys */}
+                {/* Provider selector - glass dropdown */}
                 {showProviderSelector && (
-                    <div style={{
-                        position: 'relative',
-                        marginBottom: '20px',
-                        width: '180px',
-                    }}>
-                        <select
-                            value={selectedProvider}
-                            onChange={(e) => setSelectedProvider(e.target.value)}
+                    <div ref={providerDropdownRef} style={{ position: 'relative', marginBottom: '20px' }}>
+                        <button
+                            onClick={() => setProviderDropdownOpen(!providerDropdownOpen)}
                             style={{
-                                width: '100%',
-                                padding: '12px 40px 12px 16px',
-                                fontSize: '13px',
-                                fontWeight: 500,
-                                color: 'var(--gai-text-color)',
-                                backgroundColor: 'var(--glass-bg)',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '10px',
+                                padding: '10px 16px',
+                                backgroundColor: 'rgba(22, 22, 24, 0.8)',
                                 backdropFilter: 'blur(20px)',
-                                border: '1px solid var(--glass-border)',
+                                WebkitBackdropFilter: 'blur(20px)',
+                                border: '1px solid rgba(255, 255, 255, 0.1)',
                                 borderRadius: '50px',
                                 cursor: 'pointer',
-                                appearance: 'none',
-                                outline: 'none',
-                                boxShadow: 'var(--glass-shadow)',
-                                transition: 'all 0.2s ease',
+                                minWidth: '160px',
                             }}
                         >
-                            {availableProviders.map(p => (
-                                <option key={p.provider} value={p.provider}>
-                                    {p.name}
-                                </option>
-                            ))}
-                        </select>
-                        <ChevronDown
-                            size={16}
-                            style={{
+                            <Cpu size={14} style={{ color: '#8b5cf6' }} />
+                            <span style={{ flex: 1, fontSize: '13px', fontWeight: 500, color: '#e4e4e7', textAlign: 'left' }}>
+                                {availableProviders.find(p => p.provider === selectedProvider)?.name || 'Select'}
+                            </span>
+                            <ChevronDown size={14} style={{
+                                color: 'rgba(228, 228, 231, 0.5)',
+                                transform: providerDropdownOpen ? 'rotate(180deg)' : 'rotate(0deg)',
+                                transition: 'transform 0.2s ease',
+                            }} />
+                        </button>
+
+                        {providerDropdownOpen && (
+                            <div style={{
                                 position: 'absolute',
-                                right: '12px',
-                                top: '50%',
-                                transform: 'translateY(-50%)',
-                                color: 'var(--gai-text-muted)',
-                                pointerEvents: 'none',
-                            }}
-                        />
+                                top: 'calc(100% + 4px)',
+                                left: '50%',
+                                transform: 'translateX(-50%)',
+                                minWidth: '180px',
+                                backgroundColor: 'rgba(22, 22, 24, 0.98)',
+                                backdropFilter: 'blur(20px)',
+                                WebkitBackdropFilter: 'blur(20px)',
+                                borderRadius: '12px',
+                                border: '1px solid rgba(255, 255, 255, 0.08)',
+                                boxShadow: '0 8px 32px rgba(0, 0, 0, 0.4)',
+                                overflow: 'hidden',
+                                zIndex: 100,
+                            }}>
+                                {availableProviders.map(p => (
+                                    <button
+                                        key={p.provider}
+                                        onClick={() => {
+                                            setSelectedProvider(p.provider);
+                                            setProviderDropdownOpen(false);
+                                        }}
+                                        style={{
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            justifyContent: 'space-between',
+                                            gap: '10px',
+                                            width: '100%',
+                                            padding: '12px 14px',
+                                            backgroundColor: 'transparent',
+                                            border: 'none',
+                                            cursor: 'pointer',
+                                            textAlign: 'left',
+                                            transition: 'background-color 0.15s ease',
+                                        }}
+                                        onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.06)'}
+                                        onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                                    >
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                            <Cpu size={14} style={{ color: '#8b5cf6' }} />
+                                            <span style={{ fontSize: '13px', fontWeight: 500, color: '#e4e4e7' }}>{p.name}</span>
+                                        </div>
+                                        {p.provider === selectedProvider && <Check size={14} style={{ color: '#10b981' }} />}
+                                    </button>
+                                ))}
+                            </div>
+                        )}
                     </div>
                 )}
 
@@ -273,7 +339,7 @@ const HomeTab: React.FC = () => {
                 justifyContent: 'center',
                 padding: '40px 24px',
                 textAlign: 'center',
-                minHeight: '300px',
+                flex: 1,
             }}>
                 <div style={{
                     width: '72px',
@@ -340,90 +406,219 @@ const HomeTab: React.FC = () => {
     // Error state (other errors)
     if (status === 'error' && error && error !== 'API_KEY_REQUIRED') {
         return (
-            <div style={{
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-                justifyContent: 'center',
-                padding: '40px 24px',
-                textAlign: 'center',
-                minHeight: '300px',
-            }}>
+            <>
                 <div style={{
-                    width: '72px',
-                    height: '72px',
-                    borderRadius: '20px',
-                    background: 'linear-gradient(135deg, rgba(248, 81, 73, 0.15) 0%, rgba(218, 54, 51, 0.1) 100%)',
                     display: 'flex',
+                    flexDirection: 'column',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    marginBottom: '20px',
+                    padding: '40px 24px',
+                    textAlign: 'center',
+                    flex: 1,
                 }}>
-                    <AlertCircle size={36} style={{ color: '#f85149' }} />
+                    <div style={{
+                        width: '72px',
+                        height: '72px',
+                        borderRadius: '20px',
+                        background: isRateLimitError
+                            ? 'linear-gradient(135deg, rgba(139, 92, 246, 0.15) 0%, rgba(99, 102, 241, 0.1) 100%)'
+                            : 'linear-gradient(135deg, rgba(248, 81, 73, 0.15) 0%, rgba(218, 54, 51, 0.1) 100%)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        marginBottom: '20px',
+                    }}>
+                        <AlertCircle size={36} style={{ color: isRateLimitError ? '#a78bfa' : '#f85149' }} />
+                    </div>
+
+                    <h2 style={{
+                        fontSize: '18px',
+                        fontWeight: 600,
+                        color: 'var(--gai-text-color)',
+                        marginBottom: '8px',
+                    }}>
+                        {isRateLimitError ? 'GitHub Rate Limit' : 'Something Went Wrong'}
+                    </h2>
+
+                    <p style={{
+                        fontSize: '14px',
+                        color: 'var(--gai-text-muted)',
+                        marginBottom: '24px',
+                        maxWidth: '300px',
+                        lineHeight: 1.5,
+                    }}>
+                        {isRateLimitError
+                            ? 'GitHub API rate limit exceeded. Add a token for 5,000 requests/hour or wait ~60 minutes.'
+                            : error}
+                    </p>
+
+                    <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', justifyContent: 'center' }}>
+                        {isRateLimitError && (
+                            <button
+                                onClick={() => setShowRateLimitModal(true)}
+                                style={{
+                                    display: 'inline-flex',
+                                    alignItems: 'center',
+                                    gap: '8px',
+                                    padding: '12px 24px',
+                                    fontSize: '14px',
+                                    fontWeight: 600,
+                                    color: '#fff',
+                                    background: 'linear-gradient(135deg, #8b5cf6 0%, #6366f1 100%)',
+                                    border: 'none',
+                                    borderRadius: '10px',
+                                    cursor: 'pointer',
+                                    transition: 'all 0.2s ease',
+                                    boxShadow: '0 4px 14px rgba(139, 92, 246, 0.35)',
+                                }}
+                                onMouseEnter={(e) => {
+                                    e.currentTarget.style.transform = 'translateY(-2px)';
+                                    e.currentTarget.style.boxShadow = '0 6px 20px rgba(139, 92, 246, 0.45)';
+                                }}
+                                onMouseLeave={(e) => {
+                                    e.currentTarget.style.transform = 'translateY(0)';
+                                    e.currentTarget.style.boxShadow = '0 4px 14px rgba(139, 92, 246, 0.35)';
+                                }}
+                            >
+                                <Key size={16} />
+                                Add GitHub Token
+                            </button>
+                        )}
+                        <button
+                            onClick={() => startAnalysis(true)}
+                            style={{
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: '8px',
+                                padding: '12px 24px',
+                                fontSize: '14px',
+                                fontWeight: 600,
+                                color: isRateLimitError ? 'var(--gai-text-muted)' : '#fff',
+                                background: isRateLimitError
+                                    ? 'var(--gai-bg-tertiary)'
+                                    : 'linear-gradient(135deg, #f85149 0%, #da3633 100%)',
+                                border: isRateLimitError ? '1px solid var(--gai-border-color)' : 'none',
+                                borderRadius: '10px',
+                                cursor: 'pointer',
+                                transition: 'all 0.2s ease',
+                                boxShadow: isRateLimitError ? 'none' : '0 4px 14px rgba(248, 81, 73, 0.35)',
+                            }}
+                            onMouseEnter={(e) => {
+                                e.currentTarget.style.transform = 'translateY(-2px)';
+                            }}
+                            onMouseLeave={(e) => {
+                                e.currentTarget.style.transform = 'translateY(0)';
+                            }}
+                        >
+                            <Sparkles size={16} />
+                            Try Again
+                        </button>
+                    </div>
                 </div>
 
-                <h2 style={{
-                    fontSize: '18px',
-                    fontWeight: 600,
-                    color: 'var(--gai-text-color)',
-                    marginBottom: '8px',
-                }}>
-                    Something Went Wrong
-                </h2>
-
-                <p style={{
-                    fontSize: '14px',
-                    color: 'var(--gai-text-muted)',
-                    marginBottom: '24px',
-                    maxWidth: '300px',
-                    lineHeight: 1.5,
-                }}>
-                    {error}
-                </p>
-
-                <button
-                    onClick={() => startAnalysis(true)}
-                    style={{
-                        display: 'inline-flex',
-                        alignItems: 'center',
-                        gap: '8px',
-                        padding: '12px 24px',
-                        fontSize: '14px',
-                        fontWeight: 600,
-                        color: '#fff',
-                        background: 'linear-gradient(135deg, #f85149 0%, #da3633 100%)',
-                        border: 'none',
-                        borderRadius: '10px',
-                        cursor: 'pointer',
-                        transition: 'all 0.2s ease',
-                        boxShadow: '0 4px 14px rgba(248, 81, 73, 0.35)',
-                    }}
-                    onMouseEnter={(e) => {
-                        e.currentTarget.style.transform = 'translateY(-2px)';
-                        e.currentTarget.style.boxShadow = '0 6px 20px rgba(248, 81, 73, 0.45)';
-                    }}
-                    onMouseLeave={(e) => {
-                        e.currentTarget.style.transform = 'translateY(0)';
-                        e.currentTarget.style.boxShadow = '0 4px 14px rgba(248, 81, 73, 0.35)';
-                    }}
-                >
-                    <Sparkles size={16} />
-                    Try Again
-                </button>
-            </div>
+                {/* GitHub Rate Limit Modal */}
+                <GitHubTokenModal
+                    isOpen={showRateLimitModal}
+                    onClose={() => setShowRateLimitModal(false)}
+                    onSaveToken={saveGitHubToken}
+                    onRetry={() => startAnalysis(true)}
+                />
+            </>
         );
     }
 
-    // Loading skeleton
+    // Loading skeleton - Modern glass design
     if (isLoading && !displayContent) {
         return (
-            <div style={{ padding: '20px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                <div className="gai-skeleton" style={{ height: '24px', width: '60%', borderRadius: '6px' }} />
-                <div className="gai-skeleton" style={{ height: '16px', width: '100%', borderRadius: '4px' }} />
-                <div className="gai-skeleton" style={{ height: '16px', width: '90%', borderRadius: '4px' }} />
-                <div className="gai-skeleton" style={{ height: '16px', width: '95%', borderRadius: '4px' }} />
-                <div className="gai-skeleton" style={{ height: '24px', width: '50%', marginTop: '12px', borderRadius: '6px' }} />
-                <div className="gai-skeleton" style={{ height: '16px', width: '85%', borderRadius: '4px' }} />
+            <div style={{ padding: '20px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                {/* ThinkingBox in loading state */}
+                <ThinkingBox isLoading={true} />
+
+                {/* Glass skeleton cards */}
+                <div style={{
+                    padding: '16px',
+                    background: 'rgba(139, 92, 246, 0.03)',
+                    backdropFilter: 'blur(10px)',
+                    borderRadius: '12px',
+                    border: '1px solid rgba(139, 92, 246, 0.1)',
+                }}>
+                    <div className="gai-skeleton-shimmer" style={{
+                        height: '20px',
+                        width: '45%',
+                        borderRadius: '6px',
+                        background: 'linear-gradient(90deg, rgba(139, 92, 246, 0.08) 0%, rgba(139, 92, 246, 0.15) 50%, rgba(139, 92, 246, 0.08) 100%)',
+                        backgroundSize: '200% 100%',
+                        animation: 'gai-shimmer 1.5s infinite',
+                        marginBottom: '12px',
+                    }} />
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                        <div className="gai-skeleton-shimmer" style={{
+                            height: '14px',
+                            width: '100%',
+                            borderRadius: '4px',
+                            background: 'linear-gradient(90deg, rgba(255,255,255,0.03) 0%, rgba(255,255,255,0.08) 50%, rgba(255,255,255,0.03) 100%)',
+                            backgroundSize: '200% 100%',
+                            animation: 'gai-shimmer 1.5s infinite',
+                        }} />
+                        <div className="gai-skeleton-shimmer" style={{
+                            height: '14px',
+                            width: '85%',
+                            borderRadius: '4px',
+                            background: 'linear-gradient(90deg, rgba(255,255,255,0.03) 0%, rgba(255,255,255,0.08) 50%, rgba(255,255,255,0.03) 100%)',
+                            backgroundSize: '200% 100%',
+                            animation: 'gai-shimmer 1.5s infinite',
+                            animationDelay: '0.1s',
+                        }} />
+                        <div className="gai-skeleton-shimmer" style={{
+                            height: '14px',
+                            width: '92%',
+                            borderRadius: '4px',
+                            background: 'linear-gradient(90deg, rgba(255,255,255,0.03) 0%, rgba(255,255,255,0.08) 50%, rgba(255,255,255,0.03) 100%)',
+                            backgroundSize: '200% 100%',
+                            animation: 'gai-shimmer 1.5s infinite',
+                            animationDelay: '0.2s',
+                        }} />
+                    </div>
+                </div>
+
+                {/* Second glass card */}
+                <div style={{
+                    padding: '16px',
+                    background: 'rgba(59, 130, 246, 0.03)',
+                    backdropFilter: 'blur(10px)',
+                    borderRadius: '12px',
+                    border: '1px solid rgba(59, 130, 246, 0.1)',
+                }}>
+                    <div className="gai-skeleton-shimmer" style={{
+                        height: '18px',
+                        width: '35%',
+                        borderRadius: '6px',
+                        background: 'linear-gradient(90deg, rgba(59, 130, 246, 0.08) 0%, rgba(59, 130, 246, 0.15) 50%, rgba(59, 130, 246, 0.08) 100%)',
+                        backgroundSize: '200% 100%',
+                        animation: 'gai-shimmer 1.5s infinite',
+                        marginBottom: '10px',
+                    }} />
+                    <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                        {[70, 55, 80, 45].map((w, i) => (
+                            <div key={i} className="gai-skeleton-shimmer" style={{
+                                height: '28px',
+                                width: `${w}px`,
+                                borderRadius: '14px',
+                                background: 'linear-gradient(90deg, rgba(255,255,255,0.03) 0%, rgba(255,255,255,0.08) 50%, rgba(255,255,255,0.03) 100%)',
+                                backgroundSize: '200% 100%',
+                                animation: 'gai-shimmer 1.5s infinite',
+                                animationDelay: `${i * 0.1}s`,
+                            }} />
+                        ))}
+                    </div>
+                </div>
+
+                <style>{`
+                    @keyframes gai-shimmer {
+                        0% { background-position: 200% 0; }
+                        100% { background-position: -200% 0; }
+                    }
+                `}</style>
             </div>
         );
     }
@@ -432,9 +627,13 @@ const HomeTab: React.FC = () => {
     return (
         <>
             <div style={{ padding: '20px', flex: 1, overflowY: 'auto' }}>
-                {displayContent && (
+                {displayContent && parsedContent && (
                     <div className="gai-markdown">
-                        <ReactMarkdown>{displayContent}</ReactMarkdown>
+                        {/* Show thinking box if AI returned thinking content */}
+                        {parsedContent.hasThinking && parsedContent.thinking && (
+                            <ThinkingBox thinking={parsedContent.thinking} />
+                        )}
+                        <ReactMarkdown>{parsedContent.content}</ReactMarkdown>
                         {isStreaming && (
                             <span style={{
                                 display: 'inline-block',
@@ -510,6 +709,14 @@ const HomeTab: React.FC = () => {
                     <ChatInterface onClose={() => setShowChat(false)} />
                 )}
             </div>
+
+            {/* GitHub Rate Limit Modal */}
+            <GitHubTokenModal
+                isOpen={showRateLimitModal}
+                onClose={() => setShowRateLimitModal(false)}
+                onSaveToken={saveGitHubToken}
+                onRetry={() => startAnalysis(true)}
+            />
 
             <style>{`
                 @keyframes gai-blink {
