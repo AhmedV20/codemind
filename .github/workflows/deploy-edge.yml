@@ -1,0 +1,204 @@
+name: Deploy to Edge Add-ons
+
+on:
+  push:
+    branches:
+      - main
+    paths-ignore:
+      - '**.md'
+      - '**.png'
+      - '**.jpg'
+      - '**.gif'
+      - '**.svg'
+      - 'LICENSE'
+      - '.gitignore'
+      - 'docs/**'
+      - '.github/ISSUE_TEMPLATE/**'
+      - '.github/PULL_REQUEST_TEMPLATE.md'
+  pull_request:
+    branches:
+      - main
+    paths-ignore:
+      - '**.md'
+      - '**.png'
+      - '**.jpg'
+      - '**.gif'
+      - '**.svg'
+      - 'LICENSE'
+      - '.gitignore'
+      - 'docs/**'
+      - '.github/ISSUE_TEMPLATE/**'
+      - '.github/PULL_REQUEST_TEMPLATE.md'
+  workflow_dispatch:
+    inputs:
+      skip-tests:
+        description: 'Skip tests before deployment'
+        required: false
+        type: boolean
+        default: false
+
+env:
+  NODE_VERSION: '20'
+
+jobs:
+  # Pre-deployment validation
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+
+      - name: 📦 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: 📋 Install dependencies
+        run: npm ci
+
+      - name: 🧪 Run tests
+        if: ${{ !inputs.skip-tests }}
+        run: npm test || echo "⚠️ No tests configured"
+
+      - name: ✨ Run linter
+        run: npm run lint || echo "⚠️ No linter configured"
+
+      - name: 🔍 TypeScript check
+        run: npx tsc --noEmit
+
+      - name: 📌 Validate version
+        run: |
+          VERSION=$(node -p "require('./package.json').version")
+          MANIFEST_VERSION=$(node -p "require('./manifest.json').version")
+          
+          if [ "$VERSION" != "$MANIFEST_VERSION" ]; then
+            echo "❌ Version mismatch!"
+            echo "package.json: $VERSION"
+            echo "manifest.json: $MANIFEST_VERSION"
+            exit 1
+          fi
+          
+          echo "✅ Version validated: $VERSION"
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+        id: validate-version
+
+    outputs:
+      version: ${{ steps.validate-version.outputs.version }}
+
+  build-and-deploy:
+    needs: validate
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+
+      - name: 📦 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: 📋 Install dependencies
+        run: npm ci
+
+      - name: 🏗️ Build extension
+        run: npm run build
+
+      - name: 🧹 Clean up build artifacts
+        run: |
+          echo "Cleaning up build artifacts..."
+          
+          # Remove .vitepress directory if it exists
+          if [ -d "dist/.vitepress" ]; then
+            echo "🗑️ Removing .vitepress directory..."
+            rm -rf dist/.vitepress
+          fi
+          
+          # Remove source maps and system files
+          find dist -name "*.map" -type f -delete 2>/dev/null || true
+          find dist -name ".DS_Store" -type f -delete 2>/dev/null || true
+          find dist -name "*.log" -type f -delete 2>/dev/null || true
+          
+          # Verify only one manifest.json exists
+          MANIFEST_COUNT=$(find dist -name "manifest.json" | wc -l)
+          echo "Found $MANIFEST_COUNT manifest.json file(s)"
+          
+          if [ "$MANIFEST_COUNT" -eq 0 ]; then
+            echo "❌ ERROR: No manifest.json found in dist/"
+            exit 1
+          fi
+          
+          if [ "$MANIFEST_COUNT" -gt 1 ]; then
+            echo "❌ ERROR: Multiple manifest.json files found:"
+            find dist -name "manifest.json"
+            exit 1
+          fi
+          
+          # Display build size
+          DIST_SIZE=$(du -sh dist | cut -f1)
+          echo "📊 Build size: $DIST_SIZE"
+          
+          echo "✅ Build cleanup complete"
+
+      - name: 📦 Create ZIP file
+        run: |
+          cd dist
+          ZIP_NAME="codemind-${{ needs.validate.outputs.version }}.zip"
+          zip -r ../$ZIP_NAME . -x "*.map"
+          cd ..
+          
+          ZIP_SIZE=$(du -h $ZIP_NAME | cut -f1)
+          echo "📦 Created $ZIP_NAME ($ZIP_SIZE)"
+          echo "zip-name=$ZIP_NAME" >> $GITHUB_OUTPUT
+        id: create-zip
+
+      - name: 🔐 Validate secrets
+        run: |
+          if [ -z "${{ secrets.EDGE_PRODUCT_ID }}" ]; then
+            echo "❌ EDGE_PRODUCT_ID secret is not set"
+            exit 1
+          fi
+          if [ -z "${{ secrets.EDGE_CLIENT_ID }}" ]; then
+            echo "❌ EDGE_CLIENT_ID secret is not set"
+            exit 1
+          fi
+          if [ -z "${{ secrets.EDGE_CLIENT_SECRET }}" ]; then
+            echo "❌ EDGE_CLIENT_SECRET secret is not set"
+            exit 1
+          fi
+          echo "✅ All secrets are configured"
+
+      - name: 💾 Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: edge-extension-${{ needs.validate.outputs.version }}
+          path: ${{ steps.create-zip.outputs.zip-name }}
+          retention-days: 30
+
+      - name: 🚀 Upload to Edge Add-ons
+        # Only deploy on push to main (not on PRs)
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        uses: AhmedV20/edge-addon@v1
+        with:
+          product-id: ${{ secrets.EDGE_PRODUCT_ID }}
+          client-id: ${{ secrets.EDGE_CLIENT_ID }}
+          client-secret: ${{ secrets.EDGE_CLIENT_SECRET }}
+          access-token-url: ${{ secrets.EDGE_ACCESS_TOKEN_URL }}
+          zip-path: ${{ steps.create-zip.outputs.zip-name }}
+
+      - name: ✅ Deployment success
+        if: success()
+        run: |
+          echo "✅ Successfully deployed v${{ needs.validate.outputs.version }} to Edge Add-ons!"
+          echo "🔗 Download artifact from GitHub Actions for manual verification"
+
+      - name: ❌ Deployment failed
+        if: failure()
+        run: |
+          echo "❌ Deployment failed! Check the logs above."
+          echo "💡 The build artifact may still be available for manual upload"

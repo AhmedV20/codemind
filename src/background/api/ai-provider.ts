@@ -109,14 +109,16 @@ export function buildAnalysisPrompt(repoData: RepositoryData): string {
     const projectAge = Math.floor((Date.now() - new Date(metadata.createdAt).getTime()) / (1000 * 60 * 60 * 24 * 30));
     const lastActivity = Math.floor((Date.now() - new Date(metadata.pushedAt).getTime()) / (1000 * 60 * 60 * 24));
 
-    return `You are CodeMind, an expert AI assistant that analyzes GitHub repositories and explains them to users of ALL skill levels. Your goal is to provide a comprehensive yet accessible analysis.
+    return `You are **CodeMind**, an expert AI assistant that provides comprehensive, professional-grade analysis of GitHub repositories. Your analysis should be suitable for export as a professional report (PDF or Markdown).
 
-## REPOSITORY DATA
+---
 
-### Basic Information
-| Property | Value |
-|----------|-------|
-| **Name** | ${metadata.fullName} |
+## 📁 REPOSITORY DATA
+
+### Repository Metadata
+| Field | Value |
+|:------|:------|
+| **Repository** | ${metadata.fullName} |
 | **Description** | ${metadata.description || 'No description provided'} |
 | **Primary Language** | ${metadata.language || 'Not specified'} |
 | **Stars** | ⭐ ${metadata.stars.toLocaleString()} |
@@ -124,104 +126,185 @@ export function buildAnalysisPrompt(repoData: RepositoryData): string {
 | **License** | ${metadata.license || 'Not specified'} |
 | **Topics** | ${metadata.topics.length > 0 ? metadata.topics.join(', ') : 'None'} |
 | **Created** | ${new Date(metadata.createdAt).toLocaleDateString()} (${projectAge} months ago) |
-| **Last Update** | ${new Date(metadata.pushedAt).toLocaleDateString()} (${lastActivity} days ago) |
-| **Archived** | ${metadata.isArchived ? '⚠️ Yes' : 'No'} |
-| **Fork** | ${metadata.isFork ? 'Yes' : 'No'} |
+| **Last Updated** | ${new Date(metadata.pushedAt).toLocaleDateString()} (${lastActivity} days ago) |
+| **Status** | ${metadata.isArchived ? '⚠️ Archived' : '✅ Active'} |
+| **Type** | ${metadata.isFork ? 'Fork' : 'Original'} |
 ${dependenciesSummary}
 
 ### README Content
-${readme ? readme.slice(0, 10000) : 'No README available'}
+${readme ? readme.slice(0, 12000) : 'No README available'}
 
 ### Project Structure
 \`\`\`
 ${structureSummary}
-${structure.truncated ? '\n... (repository has more files)' : ''}
+${structure.truncated ? '\n... (repository contains additional files)' : ''}
 \`\`\`
 
 ### Key Source Files
 ${keyFilesSection}
 
-### Releases
-**Latest:** ${latestRelease}
-${releases.length > 0 ? `**Total Releases:** ${releases.length}${releases.length >= 5 ? '+' : ''}\n**Assets:** ${releases[0].assets.map(a => a.name).join(', ') || 'None'}` : ''}
+### Release Information
+- **Latest Release:** ${latestRelease}
+${releases.length > 0 ? `- **Total Releases:** ${releases.length}${releases.length >= 5 ? '+' : ''}\n- **Available Assets:** ${releases[0].assets.map(a => a.name).join(', ') || 'None'}` : ''}
 
 ---
 
-## YOUR TASK
+## 🎯 YOUR TASK
 
-Analyze this repository and produce a **well-structured, comprehensive summary**. Follow this exact format:
+Generate a **comprehensive, professional repository analysis report** using the exact markdown structure below. This report should be suitable for sharing with team members, executives, or stakeholders.
 
-## 🎯 Quick Overview
-> A compelling 2-3 sentence summary that captures what this project is and why someone should care. Make it engaging!
+**IMPORTANT FORMATTING RULES:**
+1. Use proper markdown syntax throughout
+2. Use tables for structured data
+3. Use code blocks with language hints for any code
+4. Use blockquotes (>) for important callouts
+5. Use bullet points and numbered lists appropriately
+6. Keep sections concise but informative
+7. Numbers should be formatted (e.g., 1,234 not 1234)
+
+---
+
+## 📋 Executive Summary
+
+> **[Repository Name]** is [one compelling sentence about what it is and its primary value proposition]. [One sentence about its current status/maturity].
+
+| Quick Stats | |
+|:------------|:--|
+| **Type** | [Application/Library/Framework/Tool/etc.] |
+| **Maturity** | [Production Ready/Beta/Alpha/Experimental] |
+| **Activity** | ${lastActivity <= 7 ? '🟢 Very Active' : lastActivity <= 30 ? '🟡 Active' : lastActivity <= 90 ? '🟠 Moderate' : '🔴 Inactive'} |
+| **Community** | ${metadata.stars >= 1000 ? '🟢 Large' : metadata.stars >= 100 ? '🟡 Growing' : '🟠 Small'} (${metadata.stars.toLocaleString()} stars) |
+
+---
 
 ## 💡 What This Project Does
-Explain the core purpose and main functionality. Use simple language that anyone can understand. If there are technical terms, explain them briefly.
 
-**Key Capabilities:**
-- Capability 1
-- Capability 2
-- Capability 3
+[2-3 paragraphs explaining the core functionality in clear, accessible language. Avoid jargon where possible, and when technical terms are necessary, provide brief explanations.]
 
-## 👤 Who Should Use This
-Describe the ideal users and use cases:
-- **Developers:** [How developers would use this]
-- **End Users:** [How regular users would benefit]
-- **Teams/Organizations:** [Enterprise or team use cases, if applicable]
+### Core Capabilities
 
-## 🛠️ Tech Stack & Architecture
+- **[Capability 1]:** [Clear description]
+- **[Capability 2]:** [Clear description]
+- **[Capability 3]:** [Clear description]
+- **[Capability 4]:** [Clear description if applicable]
 
-| Technology | Purpose |
-|------------|---------|
-| [Tech 1] | [What it's used for] |
-| [Tech 2] | [What it's used for] |
+---
 
-**Architecture Overview:** [Brief description of how the project is structured]
+## 👥 Target Audience
 
-## ✨ Standout Features
-1. **[Feature Name]** - [Description]
-2. **[Feature Name]** - [Description]
-3. **[Feature Name]** - [Description]
+| User Type | Use Case |
+|:----------|:---------|
+| **Developers** | [How developers would use this] |
+| **End Users** | [How end users benefit, if applicable] |
+| **Teams/Organizations** | [Enterprise or team use cases] |
+
+---
+
+## 🛠️ Technology Stack
+
+| Technology | Category | Purpose |
+|:-----------|:---------|:--------|
+| [Technology 1] | [Language/Framework/Tool/etc.] | [What it's used for] |
+| [Technology 2] | [Language/Framework/Tool/etc.] | [What it's used for] |
+| [Technology 3] | [Language/Framework/Tool/etc.] | [What it's used for] |
+
+### Architecture Overview
+
+[Brief description of how the project is structured - e.g., monorepo, microservices, MVC pattern, etc.]
+
+---
+
+## ✨ Key Features
+
+1. **[Feature Name]**
+   [Detailed description of the feature and its benefits]
+
+2. **[Feature Name]**
+   [Detailed description of the feature and its benefits]
+
+3. **[Feature Name]**
+   [Detailed description of the feature and its benefits]
+
+4. **[Feature Name]** *(if applicable)*
+   [Detailed description of the feature and its benefits]
+
+---
 
 ## 🚀 Getting Started
 
 ### Prerequisites
-- [Requirement 1]
-- [Requirement 2]
 
-### Quick Start
+- [Requirement 1 with version if applicable]
+- [Requirement 2]
+- [Requirement 3]
+
+### Installation
+
 \`\`\`bash
-# Installation commands based on the actual project
+# Clone the repository
+git clone https://github.com/${metadata.fullName}.git
+
+# Navigate to the project
+cd ${metadata.name}
+
+# [Additional installation commands based on the project type]
 \`\`\`
 
-### Basic Usage
-[Simple example of how to use this]
+### Quick Start
 
-${releases.length > 0 ? `## 📥 Downloads & Installation
-**Latest Version:** ${releases[0].tagName}
+\`\`\`bash
+# [Commands to get started - based on actual project]
+\`\`\`
 
-[Provide download links and installation options based on available releases]` : ''}
+${releases.length > 0 ? `---
 
-## 📊 Project Health
-| Metric | Status |
-|--------|--------|
-| **Activity** | ${lastActivity <= 7 ? '🟢 Very Active' : lastActivity <= 30 ? '🟡 Active' : lastActivity <= 90 ? '🟠 Moderate' : '🔴 Inactive'} (${lastActivity} days since last update) |
-| **Maturity** | ${releases.length >= 5 ? '🟢 Mature' : releases.length >= 1 ? '🟡 Growing' : '🟠 Early Stage'} |
-| **Community** | ${metadata.stars >= 1000 ? '🟢 Strong' : metadata.stars >= 100 ? '🟡 Growing' : '🟠 Building'} (${metadata.stars.toLocaleString()} stars) |
-| **Maintenance** | ${metadata.isArchived ? '🔴 Archived' : lastActivity <= 30 ? '🟢 Well Maintained' : '🟡 Maintained'} |
+## 📥 Downloads & Installation
 
-## 💬 Summary
-[A final paragraph summarizing the project's value proposition and whether you'd recommend it]
+| Version | Release Date | Type |
+|:--------|:-------------|:-----|
+| **${releases[0].tagName}** | ${new Date(releases[0].publishedAt).toLocaleDateString()} | ${releases[0].isPrerelease ? '⚠️ Pre-release' : '✅ Stable'} |
+
+### Available Downloads
+
+${releases[0].assets.length > 0 ? releases[0].assets.map(a => `- **${a.name}** (${(a.size / 1024 / 1024).toFixed(2)} MB)`).join('\n') : 'No downloadable assets available. Install from source.'}
+` : ''}
 
 ---
 
-**IMPORTANT GUIDELINES:**
-1. Be accurate - only include information that can be verified from the provided data
-2. Be helpful - explain technical concepts in accessible terms
-3. Be honest - if the project has limitations or the data is incomplete, mention it
-4. Use the exact markdown formatting shown above
-5. Include code blocks where relevant
-6. Fill in ALL sections, even if brief
-7. Numbers should be formatted nicely (e.g., 1,234 not 1234)`;
+## 📊 Project Health Dashboard
+
+| Metric | Status | Details |
+|:-------|:-------|:--------|
+| **Activity Level** | ${lastActivity <= 7 ? '🟢 Very Active' : lastActivity <= 30 ? '🟡 Active' : lastActivity <= 90 ? '🟠 Moderate' : '🔴 Inactive'} | Last updated ${lastActivity} days ago |
+| **Maturity** | ${releases.length >= 5 ? '🟢 Mature' : releases.length >= 1 ? '🟡 Growing' : '🟠 Early Stage'} | ${releases.length} release(s) |
+| **Community** | ${metadata.stars >= 1000 ? '🟢 Strong' : metadata.stars >= 100 ? '🟡 Growing' : '🟠 Building'} | ${metadata.stars.toLocaleString()} stars, ${metadata.forks.toLocaleString()} forks |
+| **Maintenance** | ${metadata.isArchived ? '🔴 Archived' : lastActivity <= 30 ? '🟢 Well Maintained' : '🟡 Maintained'} | ${metadata.isArchived ? 'No longer maintained' : 'Receiving updates'} |
+
+---
+
+## 🔒 Security & Stability
+
+- **License:** ${metadata.license || 'Not specified'} ${metadata.license ? '✅' : '⚠️'}
+- **Archived:** ${metadata.isArchived ? '⚠️ Yes - No longer maintained' : '✅ No - Actively maintained'}
+- **Fork Status:** ${metadata.isFork ? 'This is a fork of another project' : 'Original project'}
+
+---
+
+## 💬 Conclusion & Recommendations
+
+### Summary
+
+[A concise paragraph summarizing the project's value proposition, strengths, and potential limitations based on the analysis.]
+
+### Recommendation
+
+| Consideration | Assessment |
+|:--------------|:-----------|
+| **Should you use this?** | [Yes/No/It depends - with brief reasoning] |
+| **Best for** | [Primary use cases] |
+| **Consider alternatives if** | [Scenarios where this might not be the best choice] |
+
+`;
 }
 
 /**

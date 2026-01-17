@@ -8,6 +8,7 @@
 <div align="center">
 
 [![Stars](https://img.shields.io/github/stars/AhmedV20/codemind?style=social)](https://github.com/AhmedV20/codemind/stargazers)
+[![Version](https://img.shields.io/badge/version-1.1.0-blue)](https://github.com/AhmedV20/codemind/releases)
 [![Build](https://img.shields.io/github/actions/workflow/status/AhmedV20/codemind/ci.yml?label=CI/Build)](https://github.com/AhmedV20/codemind/actions)
 [![Privacy](https://img.shields.io/badge/Privacy-Protected-green)](PRIVACY.md)
 [![License](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
@@ -26,12 +27,16 @@
 <tr>
 <td align="center" width="50%">
 <br>
+<img src="https://raw.githubusercontent.com/alrra/browser-logos/main/src/edge/edge_48x48.png" width="65">
+<br>
 <img src="https://img.shields.io/badge/Edge-Coming_Soon-0078D7?style=for-the-badge&logo=microsoftedge&logoColor=white" alt="Edge">
 <br><br>
 <p><b>🔄 Under Review</b></p>
 <p>Our Edge extension is currently being reviewed by Microsoft. Check back soon!</p>
 </td>
 <td align="center" width="50%">
+<br>
+<img src="https://raw.githubusercontent.com/alrra/browser-logos/main/src/firefox/firefox_48x48.png" width="65">
 <br>
 <img src="https://img.shields.io/badge/Firefox-Coming_Soon-FF7139?style=for-the-badge&logo=firefoxbrowser&logoColor=white" alt="Firefox">
 <br><br>
@@ -65,11 +70,25 @@ CodeMind is a browser extension that uses AI to analyze GitHub repositories. It 
 
 ## ✨ Features
 
-1. **One-Click Analysis** — Click the CodeMind button on any GitHub repo
-2. **AI Summaries** — Get instant, readable explanations of complex code
-3. **Interactive Chat** — Ask follow-up questions about the repository
-4. **Multiple Providers** — Choose Gemini, Claude, or HuggingFace
-5. **Smart Caching** — Results saved for 24 hours
+### Core Features
+- **One-Click Analysis** — Click the CodeMind button on any GitHub repo
+- **AI Summaries** — Get instant, readable explanations of complex code
+- **Interactive Chat** — Ask follow-up questions about the repository
+- **Smart Caching** — Results saved for 24 hours
+
+### AI Providers
+| Provider | Free Tier | Description |
+|----------|-----------|-------------|
+| **Gemini** | ✅ Yes | Google's AI with generous free tier |
+| **OpenRouter** | ✅ Yes | Access 100+ models (DeepSeek, Qwen, etc.) |
+| **Claude** | ❌ Paid | Anthropic's Claude models |
+| **HuggingFace** | ✅ Yes | Open-source models |
+
+### v1.1.0 Highlights
+- 🧠 **ThinkingBox** — See AI reasoning process in collapsible box
+- 🔑 **GitHub Token** — Handle rate limits with personal access token
+- 🎨 **Glass UI** — Modern glassmorphism design throughout
+- ⚠️ **Error Handling** — Clear error messages with retry options
 
 ---
 
@@ -103,12 +122,10 @@ npm run dev
 npm run build
 ```
 
+---
+
 ### 🔧 Manual Installation
 
-<details>
-<summary><b>Click to expand installation steps</b></summary>
-
-<br>
 
 **Step 1: Build the extension**
 ```bash
@@ -132,7 +149,7 @@ npm run build
 **Step 3: Configure**
 
 1. Click the CodeMind extension icon in your toolbar
-2. Add your AI API key (Gemini, Claude, or HuggingFace)
+2. Add your AI API key (Gemini, OpenRouter, Claude, or HuggingFace)
 3. Navigate to any GitHub repo and start analyzing!
 
 </details>
@@ -142,6 +159,10 @@ npm run build
 ## 🤝 Contributing
 
 Contributions are welcome! Please read [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
+
+<a href="https://github.com/AhmedV20/codemind/graphs/contributors">
+  <img src="https://contrib.rocks/image?repo=AhmedV20/codemind" />
+</a>
 
 ---
 

@@ -13,6 +13,7 @@ const PROVIDER_NAMES: Record<string, string> = {
     gemini: 'Gemini',
     claude: 'Claude',
     huggingface: 'HuggingFace',
+    openrouter: 'OpenRouter',
 };
 
 interface AnalysisStore extends AnalysisState, ChatState {
@@ -39,6 +40,7 @@ interface AnalysisStore extends AnalysisState, ChatState {
     setSelectedProvider: (provider: string) => void;
     loadSettings: () => Promise<void>;
     saveSettings: (settings: ExtensionSettings) => Promise<boolean>;
+    saveGitHubToken: (token: string) => Promise<boolean>;
     clearCache: () => Promise<boolean>;
     sendChatMessage: (message: string) => void;
     reset: () => void;
@@ -153,12 +155,38 @@ export const useAnalysisStore = create<AnalysisStore>((set, get) => ({
                     else resolve();
                 });
             });
-            set({ hasCachedAnalysis: false });
+            // Reset to default state so HomeTab shows initial view
+            set({
+                hasCachedAnalysis: false,
+                status: 'idle',
+                analysis: null,
+                streamingContent: '',
+                error: null,
+                chatMessages: [],
+                chatStatus: 'idle',
+                chatStreamingContent: '',
+                chatError: null,
+            });
             return true;
         } catch (error) {
             console.error('Failed to clear cache:', error);
             return false;
         }
+    },
+
+    saveGitHubToken: async (token: string) => {
+        const { settings, saveSettings } = get();
+        if (!settings) return false;
+
+        const newSettings = {
+            ...settings,
+            github: {
+                ...settings.github,
+                token,
+            },
+        };
+
+        return saveSettings(newSettings);
     },
 
     checkCache: async () => {

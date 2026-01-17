@@ -2,9 +2,25 @@ name: CI Build
 
 on:
   push:
-    branches: [ main ]
+    paths-ignore:
+      - '**.md'
+      - '**.png'
+      - '**.jpg'
+      - '**.gif'
+      - '**.svg'
+      - 'LICENSE'
+      - '.gitignore'
+      - 'docs/**'
   pull_request:
-    branches: [ main ]
+    paths-ignore:
+      - '**.md'
+      - '**.png'
+      - '**.jpg'
+      - '**.gif'
+      - '**.svg'
+      - 'LICENSE'
+      - '.gitignore'
+      - 'docs/**'
 
 jobs:
   build:
@@ -28,10 +44,3 @@ jobs:
 
       - name: Build extension
         run: npm run build
-
-      - name: Upload build artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: extension-build
-          path: dist/
-          retention-days: 30

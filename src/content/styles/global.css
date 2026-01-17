@@ -4,17 +4,19 @@
 
 /* GitHub AI Analyzer - Global Styles */
 
-/* Reset for shadow DOM isolation */
+/* 
+ * IMPORTANT: All styles are scoped to .github-ai-analyzer-root to prevent
+ * CSS from leaking to the GitHub page and breaking badges, lists, etc.
+ */
+
+/* Reset and theme variables for extension root */
 .github-ai-analyzer-root {
   all: initial;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', Helvetica, Arial, sans-serif;
   font-size: 14px;
   line-height: 1.5;
-  color: var(--gai-text-color, #1f2328);
-}
 
-/* CSS Custom Properties for theme switching */
-:root {
+  /* CSS Custom Properties - Light Theme (default) */
   --gai-bg-primary: #ffffff;
   --gai-bg-secondary: #f6f8fa;
   --gai-bg-tertiary: #eff2f5;
@@ -31,7 +33,7 @@
   --gai-shadow-sm: 0 1px 0 rgba(27, 31, 36, 0.04);
   --gai-shadow-md: 0 3px 6px rgba(140, 149, 159, 0.15);
   --gai-shadow-lg: 0 8px 24px rgba(140, 149, 159, 0.2);
-  
+
   /* Liquid Glass Variables - Light */
   --glass-bg: rgba(255, 255, 255, 0.75);
   --glass-bg-hover: rgba(255, 255, 255, 0.9);
@@ -44,6 +46,8 @@
   --glass-inactive-text: rgba(0, 0, 0, 0.6);
   --nav-pill-bg: rgba(245, 245, 247, 0.9);
   --nav-pill-shadow: 0 4px 24px rgba(0, 0, 0, 0.1), 0 0 0 1px rgba(0, 0, 0, 0.05);
+
+  color: var(--gai-text-color);
 }
 
 /* Dark theme */
@@ -65,7 +69,7 @@
   --gai-shadow-sm: 0 0 transparent;
   --gai-shadow-md: 0 3px 6px rgba(0, 0, 0, 0.3);
   --gai-shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.4);
-  
+
   /* Liquid Glass Variables - Dark */
   --glass-bg: rgba(30, 30, 35, 0.8);
   --glass-bg-hover: rgba(40, 40, 45, 0.9);
@@ -143,6 +147,7 @@
     transform: translateX(100%);
     opacity: 0;
   }
+
   to {
     transform: translateX(0);
     opacity: 1;
@@ -162,26 +167,34 @@
 }
 
 @keyframes gai-fade-in {
-  from { opacity: 0; }
-  to { opacity: 1; }
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
 }
 
 /* Skeleton loader */
 .gai-skeleton {
-  background: linear-gradient(
-    90deg,
-    var(--gai-bg-secondary) 25%,
-    var(--gai-bg-tertiary) 50%,
-    var(--gai-bg-secondary) 75%
-  );
+  background: linear-gradient(90deg,
+      var(--gai-bg-secondary) 25%,
+      var(--gai-bg-tertiary) 50%,
+      var(--gai-bg-secondary) 75%);
   background-size: 200% 100%;
   animation: gai-skeleton-shimmer 1.5s infinite;
   border-radius: 4px;
 }
 
 @keyframes gai-skeleton-shimmer {
-  0% { background-position: 200% 0; }
-  100% { background-position: -200% 0; }
+  0% {
+    background-position: 200% 0;
+  }
+
+  100% {
+    background-position: -200% 0;
+  }
 }
 
 /* Spinner */
@@ -190,8 +203,13 @@
 }
 
 @keyframes gai-spin {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
+  from {
+    transform: rotate(0deg);
+  }
+
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 /* Markdown content styling */
@@ -244,6 +262,80 @@
 .gai-markdown pre code {
   background: none;
   padding: 0;
+}
+
+/* Table styles */
+.gai-markdown table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 16px 0;
+  font-size: 13px;
+  border-radius: 8px;
+  overflow: hidden;
+  border: 1px solid var(--gai-border-color);
+}
+
+.gai-markdown thead {
+  background: var(--gai-bg-secondary);
+}
+
+.gai-markdown th {
+  padding: 10px 12px;
+  text-align: left;
+  font-weight: 600;
+  color: var(--gai-text-color);
+  border-bottom: 1px solid var(--gai-border-color);
+}
+
+.gai-markdown td {
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--gai-border-muted);
+  color: var(--gai-text-muted);
+}
+
+.gai-markdown tr:last-child td {
+  border-bottom: none;
+}
+
+.gai-markdown tr:nth-child(even) {
+  background: var(--gai-bg-secondary);
+}
+
+.gai-markdown tr:hover {
+  background: var(--gai-bg-tertiary);
+}
+
+/* Blockquote styles */
+.gai-markdown blockquote {
+  margin: 16px 0;
+  padding: 12px 16px;
+  border-left: 4px solid var(--gai-accent-color);
+  background: var(--gai-bg-secondary);
+  border-radius: 0 8px 8px 0;
+  color: var(--gai-text-muted);
+  font-style: italic;
+}
+
+.gai-markdown blockquote p {
+  margin: 0;
+}
+
+/* Horizontal rule */
+.gai-markdown hr {
+  border: none;
+  height: 1px;
+  background: var(--gai-border-color);
+  margin: 24px 0;
+}
+
+/* Strong and emphasis */
+.gai-markdown strong {
+  font-weight: 600;
+  color: var(--gai-text-color);
+}
+
+.gai-markdown em {
+  font-style: italic;
 }
 
 /* Chat styles */

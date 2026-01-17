@@ -11,7 +11,7 @@ export class HuggingFaceProvider implements AIProvider {
     private apiKey: string;
     private model: string;
 
-    constructor(apiKey: string, model = 'Qwen/Qwen2.5-72B-Instruct') {
+    constructor(apiKey: string, model = 'openai/gpt-oss-20b') {
         this.apiKey = apiKey;
         this.model = model;
     }

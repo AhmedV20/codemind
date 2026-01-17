@@ -1,8 +1,11 @@
 import React, { useState, useRef, useEffect } from 'react';
 import ReactMarkdown from 'react-markdown';
-import { Send, X, Loader2 } from 'lucide-react';
+import { Send, X, Loader2, AlertTriangle, RefreshCw } from 'lucide-react';
 import { useAnalysisStore } from '../hooks/useAnalysis';
 import { SUGGESTED_QUESTIONS } from '@shared/constants';
+import ThinkingBox from './ThinkingBox';
+import GitHubTokenModal from './GitHubTokenModal';
+import { parseThinkingContent } from '../utils/thinkingParser';
 
 interface ChatInterfaceProps {
     onClose: () => void;
@@ -13,13 +16,26 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ onClose }) => {
         chatMessages,
         chatStatus,
         chatStreamingContent,
+        chatError,
         sendChatMessage,
-        analysis
+        analysis,
+        saveGitHubToken,
+        startAnalysis
     } = useAnalysisStore();
 
     const [input, setInput] = useState('');
+    const [showRateLimitModal, setShowRateLimitModal] = useState(false);
     const messagesEndRef = useRef<HTMLDivElement>(null);
     const inputRef = useRef<HTMLInputElement>(null);
+
+    // Detect rate limit error and show modal
+    const isRateLimitError = chatError?.includes('rate limit') || chatError?.includes('Rate limit');
+
+    useEffect(() => {
+        if (isRateLimitError) {
+            setShowRateLimitModal(true);
+        }
+    }, [isRateLimitError]);
 
     // Auto-scroll to bottom
     useEffect(() => {
@@ -57,7 +73,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ onClose }) => {
             style={{
                 display: 'flex',
                 flexDirection: 'column',
-                height: '300px',
+                height: '450px',
                 maxHeight: '50vh',
             }}
         >
@@ -152,7 +168,17 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ onClose }) => {
                     >
                         {msg.role === 'assistant' ? (
                             <div className="gai-markdown" style={{ fontSize: '13px' }}>
-                                <ReactMarkdown>{msg.content}</ReactMarkdown>
+                                {(() => {
+                                    const parsed = parseThinkingContent(msg.content);
+                                    return (
+                                        <>
+                                            {parsed.hasThinking && parsed.thinking && (
+                                                <ThinkingBox thinking={parsed.thinking} />
+                                            )}
+                                            <ReactMarkdown>{parsed.content}</ReactMarkdown>
+                                        </>
+                                    );
+                                })()}
                             </div>
                         ) : (
                             <span style={{ fontSize: '13px' }}>{msg.content}</span>
@@ -175,25 +201,97 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ onClose }) => {
                         }}
                     >
                         <div className="gai-markdown" style={{ fontSize: '13px' }}>
-                            <ReactMarkdown>{chatStreamingContent}</ReactMarkdown>
+                            {(() => {
+                                const parsed = parseThinkingContent(chatStreamingContent);
+                                return (
+                                    <>
+                                        {parsed.hasThinking && parsed.thinking && (
+                                            <ThinkingBox thinking={parsed.thinking} />
+                                        )}
+                                        <ReactMarkdown>{parsed.content}</ReactMarkdown>
+                                    </>
+                                );
+                            })()}
                         </div>
                     </div>
                 )}
 
-                {/* Loading indicator */}
+                {/* Loading indicator - uses ThinkingBox in message bubble */}
                 {isLoading && !chatStreamingContent && (
-                    <div
-                        style={{
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: '8px',
-                            padding: '10px 14px',
-                            color: 'var(--gai-text-muted)',
-                            fontSize: '13px',
-                        }}
-                    >
-                        <Loader2 size={14} className="gai-spinner" />
-                        Thinking...
+                    <div style={{
+                        padding: '10px 14px',
+                        borderRadius: '12px',
+                        maxWidth: '85%',
+                        backgroundColor: 'var(--gai-bg-primary)',
+                        alignSelf: 'flex-start',
+                        borderBottomLeftRadius: '4px',
+                    }}>
+                        <ThinkingBox isLoading={true} />
+                    </div>
+                )}
+
+                {/* Error display */}
+                {chatError && !isLoading && (
+                    <div style={{
+                        display: 'flex',
+                        alignItems: 'flex-start',
+                        gap: '10px',
+                        padding: '12px 14px',
+                        borderRadius: '12px',
+                        maxWidth: '90%',
+                        backgroundColor: 'rgba(239, 68, 68, 0.1)',
+                        border: '1px solid rgba(239, 68, 68, 0.2)',
+                        alignSelf: 'flex-start',
+                    }}>
+                        <AlertTriangle size={16} style={{ color: '#f87171', flexShrink: 0, marginTop: '2px' }} />
+                        <div style={{ flex: 1 }}>
+                            <div style={{ fontSize: '12px', fontWeight: 600, color: '#f87171', marginBottom: '4px' }}>
+                                Error
+                            </div>
+                            <div style={{ fontSize: '12px', color: 'var(--gai-text-muted)', lineHeight: 1.4 }}>
+                                {chatError}
+                            </div>
+                            {isRateLimitError && (
+                                <button
+                                    onClick={() => setShowRateLimitModal(true)}
+                                    style={{
+                                        marginTop: '8px',
+                                        padding: '6px 12px',
+                                        fontSize: '11px',
+                                        fontWeight: 600,
+                                        color: '#a78bfa',
+                                        backgroundColor: 'rgba(139, 92, 246, 0.15)',
+                                        border: '1px solid rgba(139, 92, 246, 0.3)',
+                                        borderRadius: '6px',
+                                        cursor: 'pointer',
+                                    }}
+                                >
+                                    Add GitHub Token
+                                </button>
+                            )}
+                            {!isRateLimitError && (
+                                <button
+                                    onClick={() => sendChatMessage(chatMessages[chatMessages.length - 1]?.content || '')}
+                                    style={{
+                                        marginTop: '8px',
+                                        display: 'inline-flex',
+                                        alignItems: 'center',
+                                        gap: '4px',
+                                        padding: '6px 12px',
+                                        fontSize: '11px',
+                                        fontWeight: 600,
+                                        color: 'var(--gai-text-muted)',
+                                        backgroundColor: 'var(--gai-bg-tertiary)',
+                                        border: '1px solid var(--gai-border-color)',
+                                        borderRadius: '6px',
+                                        cursor: 'pointer',
+                                    }}
+                                >
+                                    <RefreshCw size={12} />
+                                    Retry
+                                </button>
+                            )}
+                        </div>
                     </div>
                 )}
 
@@ -249,6 +347,17 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ onClose }) => {
                     <Send size={16} />
                 </button>
             </form>
+
+            {/* GitHub Rate Limit Modal */}
+            <GitHubTokenModal
+                isOpen={showRateLimitModal}
+                onClose={() => setShowRateLimitModal(false)}
+                onSaveToken={saveGitHubToken}
+                onRetry={() => {
+                    const lastUserMsg = chatMessages.filter(m => m.role === 'user').pop();
+                    if (lastUserMsg) sendChatMessage(lastUserMsg.content);
+                }}
+            />
         </div>
     );
 };

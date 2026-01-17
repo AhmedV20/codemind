@@ -3,14 +3,15 @@ import { API_ENDPOINTS } from '@shared/constants';
 import { AIProvider, ChatContext, buildAnalysisPrompt, buildChatPrompt } from '../ai-provider';
 
 /**
- * Claude (Anthropic) AI Provider
+ * OpenRouter AI Provider
+ * Uses OpenAI-compatible API format
  */
-export class ClaudeProvider implements AIProvider {
-    readonly name = 'Claude';
+export class OpenRouterProvider implements AIProvider {
+    readonly name = 'OpenRouter';
     private apiKey: string;
     private model: string;
 
-    constructor(apiKey: string, model = 'claude-sonnet-4-20250514') {
+    constructor(apiKey: string, model = 'google/gemini-2.0-flash-exp:free') {
         this.apiKey = apiKey;
         this.model = model;
     }
@@ -22,33 +23,48 @@ export class ClaudeProvider implements AIProvider {
         const prompt = buildAnalysisPrompt(repoData);
         let fullContent = '';
 
-        const response = await fetch(`${API_ENDPOINTS.CLAUDE_API}/messages`, {
+        const url = `${API_ENDPOINTS.OPENROUTER_API}/chat/completions`;
+
+        const response = await fetch(url, {
             method: 'POST',
             headers: {
+                'Authorization': `Bearer ${this.apiKey}`,
                 'Content-Type': 'application/json',
-                'x-api-key': this.apiKey,
-                'anthropic-version': '2023-06-01',
-                'anthropic-dangerous-direct-browser-access': 'true',
+                'HTTP-Referer': 'https://github.com',
+                'X-Title': 'CodeMind',
             },
             body: JSON.stringify({
                 model: this.model,
-                max_tokens: 4096,
-                stream: true,
                 messages: [
                     {
                         role: 'user',
                         content: prompt,
                     },
                 ],
+                max_tokens: 4096,
+                temperature: 0.7,
+                stream: true,
             }),
         });
 
         if (!response.ok) {
+            const status = response.status;
             const error = await response.json().catch(() => ({ error: { message: response.statusText } }));
-            throw new Error(error.error?.message || `Claude API error: ${response.status}`);
+
+            if (status === 401 || status === 403) {
+                throw new Error('Invalid API key. Please check your OpenRouter API key in the extension settings.');
+            }
+            if (status === 429) {
+                throw new Error('Rate limit exceeded. Please wait and try again.');
+            }
+            if (status === 400) {
+                throw new Error(`Invalid request: ${error.error?.message || 'Please check your model name.'}`);
+            }
+
+            throw new Error(error.error?.message || `OpenRouter API error: ${status}`);
         }
 
-        // Handle streaming response
+        // Handle SSE streaming
         const reader = response.body?.getReader();
         const decoder = new TextDecoder();
 
@@ -56,20 +72,27 @@ export class ClaudeProvider implements AIProvider {
             throw new Error('No response body');
         }
 
+        let buffer = '';
+
         while (true) {
             const { done, value } = await reader.read();
             if (done) break;
 
-            const chunk = decoder.decode(value);
-            const lines = chunk.split('\n');
+            buffer += decoder.decode(value, { stream: true });
+            const lines = buffer.split('\n');
+            buffer = lines.pop() || '';
 
             for (const line of lines) {
-                if (line.startsWith('data: ')) {
+                if (line.startsWith('data:')) {
+                    const dataStr = line.slice(5).trim();
+                    if (dataStr === '[DONE]') continue;
+
                     try {
-                        const data = JSON.parse(line.slice(6));
-                        if (data.type === 'content_block_delta' && data.delta?.text) {
-                            fullContent += data.delta.text;
-                            onChunk(data.delta.text);
+                        const data = JSON.parse(dataStr);
+                        const content = data.choices?.[0]?.delta?.content;
+                        if (content) {
+                            fullContent += content;
+                            onChunk(content);
                         }
                     } catch {
                         // Skip invalid JSON
@@ -83,7 +106,7 @@ export class ClaudeProvider implements AIProvider {
             content: fullContent,
             sections: this.parseSections(fullContent),
             generatedAt: new Date().toISOString(),
-            provider: AIProviderEnum.CLAUDE,
+            provider: AIProviderEnum.OPENROUTER,
             fromCache: false,
         };
     }
@@ -96,78 +119,57 @@ export class ClaudeProvider implements AIProvider {
         const prompt = buildChatPrompt(question, context);
         let fullContent = '';
 
-        const response = await fetch(`${API_ENDPOINTS.CLAUDE_API}/messages`, {
+        const url = `${API_ENDPOINTS.OPENROUTER_API}/chat/completions`;
+
+        const response = await fetch(url, {
             method: 'POST',
             headers: {
+                'Authorization': `Bearer ${this.apiKey}`,
                 'Content-Type': 'application/json',
-                'x-api-key': this.apiKey,
-                'anthropic-version': '2023-06-01',
-                'anthropic-dangerous-direct-browser-access': 'true',
+                'HTTP-Referer': 'https://github.com',
+                'X-Title': 'CodeMind',
             },
             body: JSON.stringify({
                 model: this.model,
-                max_tokens: 2048,
-                stream: true,
                 messages: [
                     {
                         role: 'user',
                         content: prompt,
                     },
                 ],
+                max_tokens: 2048,
+                temperature: 0.7,
+                stream: false,
             }),
         });
 
         if (!response.ok) {
-            const error = await response.json().catch(() => ({ error: { message: response.statusText } }));
-            throw new Error(error.error?.message || `Claude API error: ${response.status}`);
+            const error = await response.json().catch(() => ({ error: response.statusText }));
+            throw new Error(error.error?.message || `OpenRouter API error: ${response.status}`);
         }
 
-        const reader = response.body?.getReader();
-        const decoder = new TextDecoder();
+        const data = await response.json();
+        fullContent = data.choices?.[0]?.message?.content || '';
 
-        if (!reader) {
-            throw new Error('No response body');
-        }
-
-        while (true) {
-            const { done, value } = await reader.read();
-            if (done) break;
-
-            const chunk = decoder.decode(value);
-            const lines = chunk.split('\n');
-
-            for (const line of lines) {
-                if (line.startsWith('data: ')) {
-                    try {
-                        const data = JSON.parse(line.slice(6));
-                        if (data.type === 'content_block_delta' && data.delta?.text) {
-                            fullContent += data.delta.text;
-                            onChunk(data.delta.text);
-                        }
-                    } catch {
-                        // Skip invalid JSON
-                    }
-                }
-            }
-        }
-
+        onChunk(fullContent);
         return fullContent;
     }
 
     async testConnection(): Promise<boolean> {
         try {
-            const response = await fetch(`${API_ENDPOINTS.CLAUDE_API}/messages`, {
+            const url = `${API_ENDPOINTS.OPENROUTER_API}/chat/completions`;
+            const response = await fetch(url, {
                 method: 'POST',
                 headers: {
+                    'Authorization': `Bearer ${this.apiKey}`,
                     'Content-Type': 'application/json',
-                    'x-api-key': this.apiKey,
-                    'anthropic-version': '2023-06-01',
-                    'anthropic-dangerous-direct-browser-access': 'true',
+                    'HTTP-Referer': 'https://github.com',
+                    'X-Title': 'CodeMind',
                 },
                 body: JSON.stringify({
                     model: this.model,
-                    max_tokens: 10,
                     messages: [{ role: 'user', content: 'Hi' }],
+                    max_tokens: 10,
                 }),
             });
             return response.ok;
@@ -177,7 +179,6 @@ export class ClaudeProvider implements AIProvider {
     }
 
     private parseSections(content: string): Analysis['sections'] {
-        // Basic parsing - in production, use more robust parsing
         return {
             summary: this.extractSection(content, '## 📊 Quick Summary'),
             whatItDoes: this.extractSection(content, '## 🎯 What It Does'),
