@@ -72,7 +72,7 @@ jobs:
       - name: 📌 Validate version
         run: |
           VERSION=$(node -p "require('./package.json').version")
-          MANIFEST_VERSION=$(node -p "require('./manifest.json').version")
+          MANIFEST_VERSION=$(node -p "require('./public/manifest.json').version")
           
           if [ "$VERSION" != "$MANIFEST_VERSION" ]; then
             echo "❌ Version mismatch!"
