@@ -113,6 +113,12 @@ jobs:
         run: |
           echo "Cleaning up build artifacts..."
           
+          # Remove .vite directory (Vite's internal build manifest - not needed)
+          if [ -d "dist/.vite" ]; then
+            echo "🗑️ Removing .vite directory..."
+            rm -rf dist/.vite
+          fi
+          
           # Remove .vitepress directory if it exists
           if [ -d "dist/.vitepress" ]; then
             echo "🗑️ Removing .vitepress directory..."
@@ -124,20 +130,13 @@ jobs:
           find dist -name ".DS_Store" -type f -delete 2>/dev/null || true
           find dist -name "*.log" -type f -delete 2>/dev/null || true
           
-          # Verify only one manifest.json exists
-          MANIFEST_COUNT=$(find dist -name "manifest.json" | wc -l)
-          echo "Found $MANIFEST_COUNT manifest.json file(s)"
-          
-          if [ "$MANIFEST_COUNT" -eq 0 ]; then
+          # Verify the extension manifest exists (only check root manifest)
+          if [ ! -f "dist/manifest.json" ]; then
             echo "❌ ERROR: No manifest.json found in dist/"
             exit 1
           fi
           
-          if [ "$MANIFEST_COUNT" -gt 1 ]; then
-            echo "❌ ERROR: Multiple manifest.json files found:"
-            find dist -name "manifest.json"
-            exit 1
-          fi
+          echo "✅ Found dist/manifest.json"
           
           # Display build size
           DIST_SIZE=$(du -sh dist | cut -f1)
