@@ -8,7 +8,7 @@
 <div align="center">
 
 [![Stars](https://img.shields.io/github/stars/AhmedV20/codemind?style=social)](https://github.com/AhmedV20/codemind/stargazers)
-[![Version](https://img.shields.io/badge/version-1.1.0-blue)](https://github.com/AhmedV20/codemind/releases)
+[![Version](https://img.shields.io/badge/version-1.1.1-blue)](https://github.com/AhmedV20/codemind/releases)
 [![Build](https://img.shields.io/github/actions/workflow/status/AhmedV20/codemind/ci.yml?label=CI/Build)](https://github.com/AhmedV20/codemind/actions)
 [![Privacy](https://img.shields.io/badge/Privacy-Protected-green)](PRIVACY.md)
 [![License](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
@@ -27,12 +27,14 @@
 <tr>
 <td align="center" width="50%">
 <br>
+<a href="https://microsoftedge.microsoft.com/addons/detail/hfggelncfoaompalbnkgbincglagmbnj">
 <img src="https://raw.githubusercontent.com/alrra/browser-logos/main/src/edge/edge_48x48.png" width="65">
 <br>
-<img src="https://img.shields.io/badge/Edge-Coming_Soon-0078D7?style=for-the-badge&logo=microsoftedge&logoColor=white" alt="Edge">
+<img src="https://img.shields.io/badge/Edge-Install_Now-0078D7?style=for-the-badge&logo=microsoftedge&logoColor=white" alt="Edge">
+</a>
 <br><br>
-<p><b>🔄 Under Review</b></p>
-<p>Our Edge extension is currently being reviewed by Microsoft. Check back soon!</p>
+<p><b>✅ Available Now</b></p>
+<p>Get CodeMind from the Microsoft Edge Add-ons Store!</p>
 </td>
 <td align="center" width="50%">
 <br>
@@ -56,14 +58,27 @@
 
 ### 💡 What is CodeMind?
 
-CodeMind is a browser extension that uses AI to analyze GitHub repositories. It fetches the repository structure, README, dependencies, and key files, then generates a comprehensive summary explaining what the project does, who it's for, and how to use it.
+CodeMind is a powerful browser extension that uses AI to instantly understand any GitHub repository. Simply click a button and get:
+
+- **Smart Summaries** — Understand what the project does, who it's for, and its key features
+- **Code Structure Analysis** — Learn how the codebase is organized  
+- **Tech Stack Detection** — See all languages, frameworks, and dependencies at a glance
+- **Interactive Q&A** — Ask follow-up questions and get detailed answers about any part of the code
+
+<!-- Demo GIF - Replace with your actual demo recording
+<p align="center">
+  <img src="docs/demo.gif" alt="CodeMind Demo" width="700">
+  <br>
+  <em>Analyze any GitHub repository in seconds</em>
+</p>
+-->
 
 **How to use:**
 
-1. Install the extension from your browser's store (or manually - see the [manual installation](#-manual-installation) guide)
+1. Install from the [Edge Add-ons Store](https://microsoftedge.microsoft.com/addons/detail/hfggelncfoaompalbnkgbincglagmbnj) or [manually](#-manual-installation)
 2. Navigate to any GitHub repository
 3. Click the **CodeMind** button next to the Insights tab
-4. Configure your AI provider in the settings panel
+4. Configure your AI provider (Gemini, Claude, HuggingFace, or OpenRouter)
 5. Click **Analyze Repository** to get your summary
 
 ---

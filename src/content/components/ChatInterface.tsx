@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 import { Send, X, Loader2, AlertTriangle, RefreshCw } from 'lucide-react';
 import { useAnalysisStore } from '../hooks/useAnalysis';
 import { SUGGESTED_QUESTIONS } from '@shared/constants';
@@ -29,13 +30,13 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ onClose }) => {
     const inputRef = useRef<HTMLInputElement>(null);
 
     // Detect rate limit error and show modal
-    const isRateLimitError = chatError?.includes('rate limit') || chatError?.includes('Rate limit');
+    const isGitHubAuthError = chatError?.includes('rate limit') || chatError?.includes('Rate limit');
 
     useEffect(() => {
-        if (isRateLimitError) {
+        if (isGitHubAuthError) {
             setShowRateLimitModal(true);
         }
-    }, [isRateLimitError]);
+    }, [isGitHubAuthError]);
 
     // Auto-scroll to bottom
     useEffect(() => {
@@ -175,7 +176,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ onClose }) => {
                                             {parsed.hasThinking && parsed.thinking && (
                                                 <ThinkingBox thinking={parsed.thinking} />
                                             )}
-                                            <ReactMarkdown>{parsed.content}</ReactMarkdown>
+                                            <ReactMarkdown remarkPlugins={[remarkGfm]}>{parsed.content}</ReactMarkdown>
                                         </>
                                     );
                                 })()}
@@ -208,7 +209,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ onClose }) => {
                                         {parsed.hasThinking && parsed.thinking && (
                                             <ThinkingBox thinking={parsed.thinking} />
                                         )}
-                                        <ReactMarkdown>{parsed.content}</ReactMarkdown>
+                                        <ReactMarkdown remarkPlugins={[remarkGfm]}>{parsed.content}</ReactMarkdown>
                                     </>
                                 );
                             })()}
@@ -251,7 +252,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ onClose }) => {
                             <div style={{ fontSize: '12px', color: 'var(--gai-text-muted)', lineHeight: 1.4 }}>
                                 {chatError}
                             </div>
-                            {isRateLimitError && (
+                            {isGitHubAuthError && (
                                 <button
                                     onClick={() => setShowRateLimitModal(true)}
                                     style={{
@@ -269,7 +270,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ onClose }) => {
                                     Add GitHub Token
                                 </button>
                             )}
-                            {!isRateLimitError && (
+                            {!isGitHubAuthError && (
                                 <button
                                     onClick={() => sendChatMessage(chatMessages[chatMessages.length - 1]?.content || '')}
                                     style={{

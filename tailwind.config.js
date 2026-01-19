@@ -3,6 +3,11 @@ export default {
     content: [
         "./src/**/*.{js,ts,jsx,tsx}",
     ],
+    // Disable Preflight to prevent CSS leaking into GitHub's page
+    // Preflight resets list-style, margins, etc. which breaks GitHub's ol/ul/badges
+    corePlugins: {
+        preflight: false,
+    },
     theme: {
         extend: {
             colors: {

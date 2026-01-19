@@ -8,6 +8,9 @@ import {
 } from '@shared/types';
 import { API_ENDPOINTS } from '@shared/constants';
 
+// Raw content URL - NOT rate limited like the API!
+const RAW_CONTENT_URL = 'https://raw.githubusercontent.com';
+
 // Key files to fetch for better analysis
 const KEY_FILES_CONFIG = [
     // Package managers / Dependencies
@@ -65,6 +68,7 @@ export class GitHubClient {
 
     setToken(token: string | null) {
         this.token = token;
+        console.log('[GitHubClient] Token set:', token ? `${token.substring(0, 8)}...` : 'null');
     }
 
     private getHeaders(): HeadersInit {
@@ -111,13 +115,24 @@ export class GitHubClient {
         );
 
         if (!response.ok) {
+            // Try to get more details from the response body
+            let errorDetails = '';
+            try {
+                const errorBody = await response.json();
+                errorDetails = errorBody.message || '';
+            } catch {
+                errorDetails = response.statusText || `HTTP ${response.status}`;
+            }
+
+            console.error('[GitHubClient] API error:', response.status, errorDetails);
+
             if (response.status === 404) {
                 throw new Error('Repository not found. It may be private or deleted.');
             }
             if (response.status === 403) {
-                throw new Error('API rate limit exceeded. Try again later or add a GitHub token.');
+                throw new Error(`API rate limit exceeded. ${errorDetails}`);
             }
-            throw new Error(`Failed to fetch repository: ${response.statusText}`);
+            throw new Error(`Failed to fetch repository: ${errorDetails}`);
         }
 
         const data = await response.json();
@@ -142,28 +157,32 @@ export class GitHubClient {
     }
 
     /**
-     * Fetch README content
+     * Fetch README content using raw.githubusercontent.com (bypasses API rate limits)
      */
-    async fetchReadme(owner: string, repo: string): Promise<string | null> {
-        try {
-            const response = await fetch(
-                `${this.baseUrl}/repos/${owner}/${repo}/readme`,
-                {
-                    headers: {
-                        ...this.getHeaders(),
-                        'Accept': 'application/vnd.github.v3.raw',
-                    }
+    async fetchReadme(owner: string, repo: string, branch?: string): Promise<string | null> {
+        // Try common README filenames using raw URL (NOT rate limited!)
+        const readmeNames = ['README.md', 'readme.md', 'README.rst', 'README.txt', 'README'];
+        const branchToUse = branch || 'main';
+
+        for (const filename of readmeNames) {
+            try {
+                const rawUrl = `${RAW_CONTENT_URL}/${owner}/${repo}/${branchToUse}/${filename}`;
+                const response = await fetch(rawUrl);
+
+                if (response.ok) {
+                    return await response.text();
                 }
-            );
-
-            if (!response.ok) {
-                return null;
+            } catch {
+                // Try next filename
             }
-
-            return await response.text();
-        } catch {
-            return null;
         }
+
+        // Fallback: try 'master' branch if 'main' didn't work
+        if (branchToUse === 'main') {
+            return this.fetchReadme(owner, repo, 'master');
+        }
+
+        return null;
     }
 
     /**
@@ -238,19 +257,14 @@ export class GitHubClient {
     }
 
     /**
-     * Fetch a single file's content
+     * Fetch a single file's content using raw.githubusercontent.com
+     * This bypasses API rate limits!
      */
     async fetchFileContent(owner: string, repo: string, branch: string, path: string): Promise<string | null> {
         try {
-            const response = await fetch(
-                `${this.baseUrl}/repos/${owner}/${repo}/contents/${path}?ref=${branch}`,
-                {
-                    headers: {
-                        ...this.getHeaders(),
-                        'Accept': 'application/vnd.github.v3.raw',
-                    }
-                }
-            );
+            // Use raw.githubusercontent.com - NOT rate limited!
+            const rawUrl = `${RAW_CONTENT_URL}/${owner}/${repo}/${branch}/${path}`;
+            const response = await fetch(rawUrl);
 
             if (!response.ok) {
                 return null;

@@ -51,6 +51,8 @@ chrome.runtime.onMessage.addListener((
         case 'SAVE_SETTINGS':
             if (message.settings) {
                 settingsManager.save(message.settings).then(() => {
+                    // Explicitly clear cache to ensure next read gets fresh data
+                    settingsManager.clearCache();
                     sendResponse({ success: true });
                 }).catch(error => {
                     sendResponse({ error: error.message });

@@ -167,8 +167,8 @@ jobs:
             echo "❌ EDGE_CLIENT_ID secret is not set"
             exit 1
           fi
-          if [ -z "${{ secrets.EDGE_CLIENT_SECRET }}" ]; then
-            echo "❌ EDGE_CLIENT_SECRET secret is not set"
+          if [ -z "${{ secrets.EDGE_API_KEY }}" ]; then
+            echo "❌ EDGE_API_KEY secret is not set"
             exit 1
           fi
           echo "✅ All secrets are configured"
@@ -183,22 +183,30 @@ jobs:
       - name: 🚀 Upload to Edge Add-ons
         # Only deploy on push to main (not on PRs)
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-        uses: AhmedV20/edge-addon@v1
+        uses: wdzeng/edge-addon@v2
         with:
           product-id: ${{ secrets.EDGE_PRODUCT_ID }}
-          client-id: ${{ secrets.EDGE_CLIENT_ID }}
-          client-secret: ${{ secrets.EDGE_CLIENT_SECRET }}
-          access-token-url: ${{ secrets.EDGE_ACCESS_TOKEN_URL }}
           zip-path: ${{ steps.create-zip.outputs.zip-name }}
+          api-key: ${{ secrets.EDGE_API_KEY }}
+          client-id: ${{ secrets.EDGE_CLIENT_ID }}
+          upload-only: true
+          notes-for-certification: |
+            v${{ needs.validate.outputs.version }} release
+            - Bug fixes and performance improvements
+            - CSS isolation fixes
+            - GitHub API optimization
+            
+            GitHub: https://github.com/AhmedV20/codemind
 
-      - name: ✅ Deployment success
+      - name: ✅ Upload success
         if: success()
         run: |
-          echo "✅ Successfully deployed v${{ needs.validate.outputs.version }} to Edge Add-ons!"
-          echo "🔗 Download artifact from GitHub Actions for manual verification"
+          echo "✅ Successfully uploaded v${{ needs.validate.outputs.version }} to Edge Add-ons!"
+          echo "⏳ Publish manually from Edge Partner Center dashboard"
+          echo "🔗 https://partner.microsoft.com/en-us/dashboard/microsoftedge/overview"
 
       - name: ❌ Deployment failed
         if: failure()
         run: |
-          echo "❌ Deployment failed! Check the logs above."
+          echo "❌ Upload failed! Check the logs above."
           echo "💡 The build artifact may still be available for manual upload"

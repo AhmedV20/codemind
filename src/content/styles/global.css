@@ -1,20 +1,24 @@
-@tailwind base;
+/* 
+ * CodeMind Extension - Global Styles
+ * 
+ * IMPORTANT: We do NOT use @tailwind base because it injects Preflight
+ * which resets styles globally and breaks GitHub's native CSS.
+ * Instead, we scope all resets to .github-ai-analyzer-root
+ */
 @tailwind components;
 @tailwind utilities;
 
-/* GitHub AI Analyzer - Global Styles */
+/* ================================
+   Scoped CSS Reset
+   Only affects elements inside our extension root
+   ================================ */
 
-/* 
- * IMPORTANT: All styles are scoped to .github-ai-analyzer-root to prevent
- * CSS from leaking to the GitHub page and breaking badges, lists, etc.
- */
-
-/* Reset and theme variables for extension root */
 .github-ai-analyzer-root {
   all: initial;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', Helvetica, Arial, sans-serif;
   font-size: 14px;
   line-height: 1.5;
+  display: block;
 
   /* CSS Custom Properties - Light Theme (default) */
   --gai-bg-primary: #ffffff;
@@ -82,6 +86,38 @@
   --glass-inactive-text: rgba(255, 255, 255, 0.6);
   --nav-pill-bg: rgba(30, 30, 35, 0.9);
   --nav-pill-shadow: 0 4px 24px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(255, 255, 255, 0.1);
+}
+
+/* ================================
+   Scoped Element Resets
+   These replace Tailwind Preflight but are scoped to our root
+   ================================ */
+
+/* Box-sizing reset - scoped to our extension only */
+.github-ai-analyzer-root *,
+.github-ai-analyzer-root *::before,
+.github-ai-analyzer-root *::after {
+  box-sizing: border-box;
+}
+
+/* Basic element inheritance */
+.github-ai-analyzer-root button,
+.github-ai-analyzer-root input,
+.github-ai-analyzer-root select,
+.github-ai-analyzer-root textarea {
+  font-family: inherit;
+  font-size: inherit;
+  line-height: inherit;
+  color: inherit;
+}
+
+/* Reset button defaults */
+.github-ai-analyzer-root button {
+  background: none;
+  border: none;
+  padding: 0;
+  margin: 0;
+  cursor: pointer;
 }
 
 /* Button base styles matching GitHub */
@@ -234,13 +270,49 @@
 }
 
 .gai-markdown ul {
-  list-style: disc;
-  padding-left: 20px;
+  list-style-type: disc !important;
+  padding-left: 24px !important;
   margin-bottom: 12px;
+  margin-top: 0;
+}
+
+.gai-markdown ol {
+  list-style-type: decimal !important;
+  padding-left: 24px !important;
+  margin-bottom: 12px;
+  margin-top: 0;
 }
 
 .gai-markdown li {
-  margin-bottom: 4px;
+  display: list-item !important;
+  margin-bottom: 6px;
+  line-height: 1.6;
+}
+
+/* Nested list styles */
+.gai-markdown ul ul,
+.gai-markdown ol ul {
+  list-style-type: circle !important;
+  margin-top: 6px;
+  margin-bottom: 6px;
+}
+
+.gai-markdown ul ol,
+.gai-markdown ol ol {
+  list-style-type: lower-alpha !important;
+  margin-top: 6px;
+  margin-bottom: 6px;
+}
+
+/* Third level nesting */
+.gai-markdown ul ul ul,
+.gai-markdown ol ul ul {
+  list-style-type: square !important;
+}
+
+.gai-markdown ul ol ol,
+.gai-markdown ol ol ol {
+  list-style-type: lower-roman !important;
 }
 
 .gai-markdown code {
@@ -365,4 +437,66 @@
     width: 100%;
     border-left: none;
   }
+}
+
+/* ================================
+   Glass Scrollbar Styles
+   ================================ */
+
+/* WebKit browsers (Chrome, Safari, Edge) - Light Theme */
+.github-ai-analyzer-root ::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+.github-ai-analyzer-root ::-webkit-scrollbar-track {
+  background: transparent;
+  margin: 4px 0;
+}
+
+.github-ai-analyzer-root ::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.15);
+  border-radius: 10px;
+  border: 1px solid transparent;
+  background-clip: padding-box;
+}
+
+.github-ai-analyzer-root ::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 0, 0, 0.25);
+}
+
+.github-ai-analyzer-root ::-webkit-scrollbar-thumb:active {
+  background: rgba(0, 0, 0, 0.35);
+}
+
+.github-ai-analyzer-root ::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
+/* WebKit browsers - Dark Theme */
+[data-color-mode="dark"] .github-ai-analyzer-root ::-webkit-scrollbar-thumb,
+.github-ai-analyzer-root.dark ::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.15);
+}
+
+[data-color-mode="dark"] .github-ai-analyzer-root ::-webkit-scrollbar-thumb:hover,
+.github-ai-analyzer-root.dark ::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.25);
+}
+
+[data-color-mode="dark"] .github-ai-analyzer-root ::-webkit-scrollbar-thumb:active,
+.github-ai-analyzer-root.dark ::-webkit-scrollbar-thumb:active {
+  background: rgba(255, 255, 255, 0.35);
+}
+
+/* Firefox scrollbar - Light Theme */
+.github-ai-analyzer-root * {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(0, 0, 0, 0.15) transparent;
+}
+
+/* Firefox scrollbar - Dark Theme */
+[data-color-mode="dark"] .github-ai-analyzer-root *,
+.github-ai-analyzer-root.dark * {
+  scrollbar-color: rgba(255, 255, 255, 0.15) transparent;
 }

@@ -1,5 +1,6 @@
 import React, { useRef, useEffect, useMemo, useState } from 'react';
 import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 import { Brain, Sparkles, AlertCircle, Settings, MessageCircle, Package, Key, ChevronDown, Cpu, Check } from 'lucide-react';
 import { useAnalysisStore } from '../hooks/useAnalysis';
 import ChatInterface from './ChatInterface';
@@ -36,7 +37,9 @@ const HomeTab: React.FC = () => {
     const isIdle = status === 'idle';
     const needsApiKey = error === 'API_KEY_REQUIRED';
     const noProvidersConfigured = availableProviders.length === 0;
-    const isRateLimitError = error?.includes('rate limit') || error?.includes('Rate limit');
+    // Show token modal for rate limit OR bad credentials (invalid/missing token)
+    const isGitHubAuthError = error?.includes('rate limit') || error?.includes('Rate limit') ||
+        error?.includes('Bad credentials') || error?.includes('401 Bad credentials');
 
     // Parse thinking content from AI output
     const parsedContent = useMemo(() => {
@@ -44,11 +47,39 @@ const HomeTab: React.FC = () => {
         return parseThinkingContent(displayContent);
     }, [displayContent]);
 
-    // Auto-scroll during streaming
+    // Smooth auto-scroll during streaming using RAF and lerp
     useEffect(() => {
-        if (isStreaming && bottomRef.current) {
-            bottomRef.current.scrollIntoView({ behavior: 'smooth', block: 'end' });
-        }
+        if (!isStreaming || !contentRef.current) return;
+
+        let animationFrameId: number;
+        const container = contentRef.current;
+
+        const smoothScroll = () => {
+            if (!container) return;
+
+            const targetScroll = container.scrollHeight - container.clientHeight;
+            const currentScroll = container.scrollTop;
+            const diff = targetScroll - currentScroll;
+
+            // If close enough (within 1px), stop animating
+            if (Math.abs(diff) < 1) {
+                container.scrollTop = targetScroll;
+                return;
+            }
+
+            // Lerp factor: 0.12 provides smooth but responsive scrolling
+            container.scrollTop = currentScroll + diff * 0.12;
+            animationFrameId = requestAnimationFrame(smoothScroll);
+        };
+
+        // Start the animation loop
+        animationFrameId = requestAnimationFrame(smoothScroll);
+
+        return () => {
+            if (animationFrameId) {
+                cancelAnimationFrame(animationFrameId);
+            }
+        };
     }, [streamingContent, isStreaming]);
 
     // Close dropdown on click outside
@@ -64,10 +95,10 @@ const HomeTab: React.FC = () => {
 
     // Auto-show rate limit modal when error detected
     useEffect(() => {
-        if (isRateLimitError) {
+        if (isGitHubAuthError) {
             setShowRateLimitModal(true);
         }
-    }, [isRateLimitError]);
+    }, [isGitHubAuthError]);
 
     // No API keys configured - first time setup
     if (isIdle && !displayContent && noProvidersConfigured) {
@@ -151,7 +182,7 @@ const HomeTab: React.FC = () => {
                     marginTop: '20px',
                     maxWidth: '260px',
                 }}>
-                    Supports Gemini, Claude, and HuggingFace
+                    Supports Gemini, Claude, HuggingFace, and OpenRouter
                 </p>
             </div>
         );
@@ -420,7 +451,7 @@ const HomeTab: React.FC = () => {
                         width: '72px',
                         height: '72px',
                         borderRadius: '20px',
-                        background: isRateLimitError
+                        background: isGitHubAuthError
                             ? 'linear-gradient(135deg, rgba(139, 92, 246, 0.15) 0%, rgba(99, 102, 241, 0.1) 100%)'
                             : 'linear-gradient(135deg, rgba(248, 81, 73, 0.15) 0%, rgba(218, 54, 51, 0.1) 100%)',
                         display: 'flex',
@@ -428,7 +459,7 @@ const HomeTab: React.FC = () => {
                         justifyContent: 'center',
                         marginBottom: '20px',
                     }}>
-                        <AlertCircle size={36} style={{ color: isRateLimitError ? '#a78bfa' : '#f85149' }} />
+                        <AlertCircle size={36} style={{ color: isGitHubAuthError ? '#a78bfa' : '#f85149' }} />
                     </div>
 
                     <h2 style={{
@@ -437,7 +468,7 @@ const HomeTab: React.FC = () => {
                         color: 'var(--gai-text-color)',
                         marginBottom: '8px',
                     }}>
-                        {isRateLimitError ? 'GitHub Rate Limit' : 'Something Went Wrong'}
+                        {isGitHubAuthError ? 'GitHub Rate Limit' : 'Something Went Wrong'}
                     </h2>
 
                     <p style={{
@@ -447,13 +478,13 @@ const HomeTab: React.FC = () => {
                         maxWidth: '300px',
                         lineHeight: 1.5,
                     }}>
-                        {isRateLimitError
+                        {isGitHubAuthError
                             ? 'GitHub API rate limit exceeded. Add a token for 5,000 requests/hour or wait ~60 minutes.'
                             : error}
                     </p>
 
                     <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', justifyContent: 'center' }}>
-                        {isRateLimitError && (
+                        {isGitHubAuthError && (
                             <button
                                 onClick={() => setShowRateLimitModal(true)}
                                 style={{
@@ -493,15 +524,15 @@ const HomeTab: React.FC = () => {
                                 padding: '12px 24px',
                                 fontSize: '14px',
                                 fontWeight: 600,
-                                color: isRateLimitError ? 'var(--gai-text-muted)' : '#fff',
-                                background: isRateLimitError
+                                color: isGitHubAuthError ? 'var(--gai-text-muted)' : '#fff',
+                                background: isGitHubAuthError
                                     ? 'var(--gai-bg-tertiary)'
                                     : 'linear-gradient(135deg, #f85149 0%, #da3633 100%)',
-                                border: isRateLimitError ? '1px solid var(--gai-border-color)' : 'none',
+                                border: isGitHubAuthError ? '1px solid var(--gai-border-color)' : 'none',
                                 borderRadius: '10px',
                                 cursor: 'pointer',
                                 transition: 'all 0.2s ease',
-                                boxShadow: isRateLimitError ? 'none' : '0 4px 14px rgba(248, 81, 73, 0.35)',
+                                boxShadow: isGitHubAuthError ? 'none' : '0 4px 14px rgba(248, 81, 73, 0.35)',
                             }}
                             onMouseEnter={(e) => {
                                 e.currentTarget.style.transform = 'translateY(-2px)';
@@ -626,14 +657,14 @@ const HomeTab: React.FC = () => {
     // Analysis content
     return (
         <>
-            <div style={{ padding: '20px', flex: 1, overflowY: 'auto' }}>
+            <div ref={contentRef} style={{ padding: '20px', flex: 1, overflowY: 'auto' }}>
                 {displayContent && parsedContent && (
                     <div className="gai-markdown">
                         {/* Show thinking box if AI returned thinking content */}
                         {parsedContent.hasThinking && parsedContent.thinking && (
                             <ThinkingBox thinking={parsedContent.thinking} />
                         )}
-                        <ReactMarkdown>{parsedContent.content}</ReactMarkdown>
+                        <ReactMarkdown remarkPlugins={[remarkGfm]}>{parsedContent.content}</ReactMarkdown>
                         {isStreaming && (
                             <span style={{
                                 display: 'inline-block',
