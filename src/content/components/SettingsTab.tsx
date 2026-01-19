@@ -35,14 +35,14 @@ const PROVIDER_INFO: Record<AIProvider, { name: string; url: string; color: stri
 // Model options for each provider
 const MODEL_OPTIONS: Record<AIProvider, { value: string; label: string; description?: string }[]> = {
     [AIProvider.GEMINI]: [
-        { value: 'gemini-2.0-flash', label: 'Gemini 2.0 Flash', description: 'Latest & fastest' },
-        { value: 'gemini-1.5-pro', label: 'Gemini 1.5 Pro', description: 'Best quality' },
-        { value: 'gemini-1.5-flash', label: 'Gemini 1.5 Flash', description: 'Fast & efficient' },
+        { value: 'gemini-3-pro-preview', label: 'Gemini 3 Pro Preview', description: 'Latest & fastest' },
+        { value: 'gemini-2.0-flash', label: 'Gemini 2.0 Flash', description: 'Fast & efficient' },
+        { value: 'gemini-2.0-flash-lite', label: 'Gemini 2.0 Flash Lite', description: 'Fast & cheap' },
     ],
     [AIProvider.CLAUDE]: [
         { value: 'claude-sonnet-4-20250514', label: 'Claude Sonnet 4', description: 'Latest & best' },
-        { value: 'claude-3-5-sonnet-20241022', label: 'Claude 3.5 Sonnet', description: 'Excellent balance' },
-        { value: 'claude-3-haiku-20240307', label: 'Claude 3 Haiku', description: 'Fast & cheap' },
+        { value: 'claude-3-7-sonnet-20250219', label: 'Claude 3.7 Sonnet', description: 'Excellent balance' },
+        { value: 'claude-3-5-haiku-latest', label: 'Claude 3.5 Haiku', description: 'Fast & cheap' },
     ],
     [AIProvider.HUGGINGFACE]: [
         { value: 'Qwen/Qwen3-30B-A3B', label: 'Qwen3-30B-A3B', description: 'Fast MoE model' },
@@ -50,10 +50,9 @@ const MODEL_OPTIONS: Record<AIProvider, { value: string; label: string; descript
         { value: 'mistralai/Mistral-7B-Instruct-v0.3', label: 'Mistral 7B', description: 'Lightweight' },
     ],
     [AIProvider.OPENROUTER]: [
-        { value: 'google/gemini-2.0-flash-exp:free', label: 'Gemini 2.0 Flash', description: 'Free' },
-        { value: 'meta-llama/llama-3.3-70b-instruct:free', label: 'Llama 3.3 70B', description: 'Free' },
-        { value: 'qwen/qwen-2.5-72b-instruct:free', label: 'Qwen 2.5 72B', description: 'Free' },
-        { value: 'deepseek/deepseek-r1:free', label: 'DeepSeek R1', description: 'Free • Reasoning' },
+        { value: 'openai/gpt-oss-20b', label: 'OpenAI GPT-20B', description: 'Free • Open Source' },
+        { value: 'xiaomi/mimo-v2-flash:free', label: 'Xiaomi Mimo V2 Flash', description: 'Free • Fast' },
+        { value: 'z-ai/glm-4.5-air:free', label: 'GLM-4.5-Air', description: 'Free • Fast' },
     ],
 };
 

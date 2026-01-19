@@ -69,6 +69,14 @@ export class SettingsManager {
         this.cachedSettings = null;
     }
 
+    /**
+     * Force refresh settings from storage (clears cache and reloads)
+     */
+    async forceRefresh(): Promise<ExtensionSettings> {
+        this.clearCache();
+        return this.get();
+    }
+
     private mergeWithDefaults(stored: Partial<ExtensionSettings>): ExtensionSettings {
         return this.deepMerge(DEFAULT_SETTINGS, stored) as ExtensionSettings;
     }

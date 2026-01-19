@@ -25,10 +25,13 @@ export class AnalysisService {
             return cached;
         }
 
-        // Get settings
-        const settings = await settingsManager.get();
+        // Force refresh settings to ensure we have the latest token
+        // This fixes the race condition when user just saved a new GitHub token
+        const settings = await settingsManager.forceRefresh();
 
         // Set GitHub token if available
+        const hasGitHubToken = !!(settings.github?.token);
+        console.log('[AnalysisService] GitHub token available:', hasGitHubToken);
         if (settings.github?.token) {
             githubClient.setToken(settings.github.token);
         }

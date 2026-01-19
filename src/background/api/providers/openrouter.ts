@@ -11,7 +11,7 @@ export class OpenRouterProvider implements AIProvider {
     private apiKey: string;
     private model: string;
 
-    constructor(apiKey: string, model = 'google/gemini-2.0-flash-exp:free') {
+    constructor(apiKey: string, model = 'deepseek/deepseek-r1-0528:free') {
         this.apiKey = apiKey;
         this.model = model;
     }

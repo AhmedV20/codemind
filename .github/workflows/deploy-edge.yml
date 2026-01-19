@@ -113,6 +113,12 @@ jobs:
         run: |
           echo "Cleaning up build artifacts..."
           
+          # Remove .vite directory (Vite's internal build manifest - not needed)
+          if [ -d "dist/.vite" ]; then
+            echo "🗑️ Removing .vite directory..."
+            rm -rf dist/.vite
+          fi
+          
           # Remove .vitepress directory if it exists
           if [ -d "dist/.vitepress" ]; then
             echo "🗑️ Removing .vitepress directory..."
@@ -124,20 +130,13 @@ jobs:
           find dist -name ".DS_Store" -type f -delete 2>/dev/null || true
           find dist -name "*.log" -type f -delete 2>/dev/null || true
           
-          # Verify only one manifest.json exists
-          MANIFEST_COUNT=$(find dist -name "manifest.json" | wc -l)
-          echo "Found $MANIFEST_COUNT manifest.json file(s)"
-          
-          if [ "$MANIFEST_COUNT" -eq 0 ]; then
+          # Verify the extension manifest exists (only check root manifest)
+          if [ ! -f "dist/manifest.json" ]; then
             echo "❌ ERROR: No manifest.json found in dist/"
             exit 1
           fi
           
-          if [ "$MANIFEST_COUNT" -gt 1 ]; then
-            echo "❌ ERROR: Multiple manifest.json files found:"
-            find dist -name "manifest.json"
-            exit 1
-          fi
+          echo "✅ Found dist/manifest.json"
           
           # Display build size
           DIST_SIZE=$(du -sh dist | cut -f1)
@@ -167,8 +166,8 @@ jobs:
             echo "❌ EDGE_CLIENT_ID secret is not set"
             exit 1
           fi
-          if [ -z "${{ secrets.EDGE_CLIENT_SECRET }}" ]; then
-            echo "❌ EDGE_CLIENT_SECRET secret is not set"
+          if [ -z "${{ secrets.EDGE_API_KEY }}" ]; then
+            echo "❌ EDGE_API_KEY secret is not set"
             exit 1
           fi
           echo "✅ All secrets are configured"
@@ -183,22 +182,30 @@ jobs:
       - name: 🚀 Upload to Edge Add-ons
         # Only deploy on push to main (not on PRs)
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-        uses: AhmedV20/edge-addon@v1
+        uses: wdzeng/edge-addon@v2
         with:
           product-id: ${{ secrets.EDGE_PRODUCT_ID }}
-          client-id: ${{ secrets.EDGE_CLIENT_ID }}
-          client-secret: ${{ secrets.EDGE_CLIENT_SECRET }}
-          access-token-url: ${{ secrets.EDGE_ACCESS_TOKEN_URL }}
           zip-path: ${{ steps.create-zip.outputs.zip-name }}
+          api-key: ${{ secrets.EDGE_API_KEY }}
+          client-id: ${{ secrets.EDGE_CLIENT_ID }}
+          upload-only: true
+          notes-for-certification: |
+            v${{ needs.validate.outputs.version }} release
+            - Bug fixes and performance improvements
+            - CSS isolation fixes
+            - GitHub API optimization
+            
+            GitHub: https://github.com/AhmedV20/codemind
 
-      - name: ✅ Deployment success
+      - name: ✅ Upload success
         if: success()
         run: |
-          echo "✅ Successfully deployed v${{ needs.validate.outputs.version }} to Edge Add-ons!"
-          echo "🔗 Download artifact from GitHub Actions for manual verification"
+          echo "✅ Successfully uploaded v${{ needs.validate.outputs.version }} to Edge Add-ons!"
+          echo "⏳ Publish manually from Edge Partner Center dashboard"
+          echo "🔗 https://partner.microsoft.com/en-us/dashboard/microsoftedge/overview"
 
       - name: ❌ Deployment failed
         if: failure()
         run: |
-          echo "❌ Deployment failed! Check the logs above."
+          echo "❌ Upload failed! Check the logs above."
           echo "💡 The build artifact may still be available for manual upload"
