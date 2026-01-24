@@ -5,6 +5,7 @@ interface ThinkingBoxProps {
     thinking?: string;
     isLoading?: boolean;
     defaultExpanded?: boolean;
+    isThinking?: boolean;
 }
 
 /**
@@ -15,9 +16,20 @@ interface ThinkingBoxProps {
 const ThinkingBox: React.FC<ThinkingBoxProps> = ({
     thinking,
     isLoading = false,
-    defaultExpanded = false
+    defaultExpanded = false,
+    isThinking = false
 }) => {
     const [isExpanded, setIsExpanded] = useState(defaultExpanded);
+
+    // Auto-expand/collapse based on thinking state
+    React.useEffect(() => {
+        if (isThinking) {
+            setIsExpanded(true);
+        } else if (thinking && !isThinking) {
+            // Collapse when thinking completes
+            setIsExpanded(false);
+        }
+    }, [isThinking, thinking]);
 
     // If no thinking and not loading, render nothing
     if (!thinking && !isLoading) return null;
@@ -58,7 +70,7 @@ const ThinkingBox: React.FC<ThinkingBoxProps> = ({
                     alignItems: 'center',
                     justifyContent: 'center',
                 }}>
-                    {isLoading ? (
+                    {isLoading || isThinking ? (
                         <Loader2 size={14} style={{ color: '#a78bfa' }} className="gai-spinner" />
                     ) : (
                         <Brain size={14} style={{ color: '#a78bfa' }} />
@@ -72,7 +84,7 @@ const ThinkingBox: React.FC<ThinkingBoxProps> = ({
                     fontWeight: 500,
                     color: '#a78bfa',
                 }}>
-                    {isLoading ? 'Thinking...' : 'Reasoning'}
+                    {isLoading ? 'Thinking...' : (isThinking ? 'Reasoning...' : 'Reasoning')}
                 </span>
 
                 {/* Expand/Collapse Icon - only show if not loading and has content */}
@@ -86,7 +98,7 @@ const ThinkingBox: React.FC<ThinkingBoxProps> = ({
                 )}
 
                 {/* Loading pulse dots */}
-                {isLoading && (
+                {(isLoading || isThinking) && (
                     <div style={{ display: 'flex', gap: '4px' }}>
                         {[0, 1, 2].map((i) => (
                             <div

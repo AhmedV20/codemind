@@ -8,7 +8,7 @@
 <div align="center">
 
 [![Stars](https://img.shields.io/github/stars/AhmedV20/codemind?style=social)](https://github.com/AhmedV20/codemind/stargazers)
-[![Version](https://img.shields.io/badge/version-1.1.1-blue)](https://github.com/AhmedV20/codemind/releases)
+[![Version](https://img.shields.io/badge/version-1.2.0-blue)](https://github.com/AhmedV20/codemind/releases)
 [![Build](https://img.shields.io/github/actions/workflow/status/AhmedV20/codemind/ci.yml?label=CI/Build)](https://github.com/AhmedV20/codemind/actions)
 [![Privacy](https://img.shields.io/badge/Privacy-Protected-green)](PRIVACY.md)
 [![License](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
@@ -38,25 +38,23 @@
 </td>
 <td align="center" width="50%">
 <br>
-<img src="https://raw.githubusercontent.com/alrra/browser-logos/main/src/firefox/firefox_48x48.png" width="65">
+<img src="https://raw.githubusercontent.com/alrra/browser-logos/main/src/chrome/chrome_48x48.png" width="65">
 <br>
-<img src="https://img.shields.io/badge/Firefox-Coming_Soon-FF7139?style=for-the-badge&logo=firefoxbrowser&logoColor=white" alt="Firefox">
+<img src="https://img.shields.io/badge/Chrome-Manual_Install-4285F4?style=for-the-badge&logo=googlechrome&logoColor=white" alt="Chrome">
 <br><br>
-<p><b>📝 In Progress</b></p>
-<p>Firefox submission is underway. We'll notify you once it's available!</p>
+<p><b>🔧 Developer Mode</b></p>
+<p>Install manually via <a href="#-manual-installation">instructions below</a></p>
 </td>
 </tr>
 </table>
 
 <br>
 
-> 💡 **Want to try CodeMind now?** See the [Manual Installation](#-manual-installation) guide below for Chrome/Edge.
-
 </div>
 
 ---
 
-### 💡 What is CodeMind?
+## 💡 What is CodeMind?
 
 CodeMind is a powerful browser extension that uses AI to instantly understand any GitHub repository. Simply click a button and get:
 
@@ -64,6 +62,7 @@ CodeMind is a powerful browser extension that uses AI to instantly understand an
 - **Code Structure Analysis** — Learn how the codebase is organized  
 - **Tech Stack Detection** — See all languages, frameworks, and dependencies at a glance
 - **Interactive Q&A** — Ask follow-up questions and get detailed answers about any part of the code
+- **Analyzed Files View** — See exactly which files were analyzed (new in v1.2.0!)
 
 <!-- Demo GIF - Replace with your actual demo recording
 <p align="center">
@@ -78,7 +77,7 @@ CodeMind is a powerful browser extension that uses AI to instantly understand an
 1. Install from the [Edge Add-ons Store](https://microsoftedge.microsoft.com/addons/detail/hfggelncfoaompalbnkgbincglagmbnj) or [manually](#-manual-installation)
 2. Navigate to any GitHub repository
 3. Click the **CodeMind** button next to the Insights tab
-4. Configure your AI provider (Gemini, Claude, HuggingFace, or OpenRouter)
+4. Configure your AI provider (Gemini, OpenAI, Claude, HuggingFace, or OpenRouter)
 5. Click **Analyze Repository** to get your summary
 
 ---
@@ -90,20 +89,36 @@ CodeMind is a powerful browser extension that uses AI to instantly understand an
 - **AI Summaries** — Get instant, readable explanations of complex code
 - **Interactive Chat** — Ask follow-up questions about the repository
 - **Smart Caching** — Results saved for 24 hours
+- **Analyzed Files Dropdown** — See which files were included in the analysis
 
 ### AI Providers
 | Provider | Free Tier | Description |
 |----------|-----------|-------------|
 | **Gemini** | ✅ Yes | Google's AI with generous free tier |
+| **OpenAI** | ❌ Paid | GPT-4o with streaming support (new!) |
 | **OpenRouter** | ✅ Yes | Access 100+ models (DeepSeek, Qwen, etc.) |
 | **Claude** | ❌ Paid | Anthropic's Claude models |
 | **HuggingFace** | ✅ Yes | Open-source models |
 
-### v1.1.0 Highlights
+### v1.2.0 Highlights
+- 🤖 **OpenAI Support** — GPT-4o integration with streaming
+- 📂 **Analyzed Files Dropdown** — See which files were analyzed with glow animation
+- 🌐 **No GitHub Token Required** — Works on public repos without authentication
+- 🎯 **Smart File Selection** — Intelligent 80k token budget with file prioritization
+- 🧠 **ThinkingBox** — See AI reasoning process in collapsible box
+- 🎨 **Redesigned UI** — New Analyze button with status colors
+- ⏱️ **Request Throttling** — Built-in cooldown to prevent rate limits
+
+### Previous Versions
+<details>
+<summary>v1.1.x Features</summary>
+
 - 🧠 **ThinkingBox** — See AI reasoning process in collapsible box
 - 🔑 **GitHub Token** — Handle rate limits with personal access token
 - 🎨 **Glass UI** — Modern glassmorphism design throughout
 - ⚠️ **Error Handling** — Clear error messages with retry options
+
+</details>
 
 ---
 
@@ -114,6 +129,7 @@ Your privacy matters. CodeMind:
 - ✅ Never sends data to external servers (except AI providers you choose)
 - ✅ Uses HTTPS for all API communications
 - ✅ Allows you to clear all data anytime
+- ✅ No GitHub token required for public repositories
 
 Read the full [Privacy Policy](PRIVACY.md).
 
@@ -137,10 +153,22 @@ npm run dev
 npm run build
 ```
 
+### 📁 Project Structure
+```
+src/
+├── background/          # Service worker & API calls
+│   ├── api/             # AI provider implementations
+│   └── services/        # Analysis, cache, strategies
+├── content/             # UI components & hooks
+│   ├── components/      # React components
+│   └── utils/           # DOM scrapers, parsers
+├── shared/              # Types & constants
+└── popup/               # Extension popup
+```
+
 ---
 
 ### 🔧 Manual Installation
-
 
 **Step 1: Build the extension**
 ```bash
@@ -164,10 +192,8 @@ npm run build
 **Step 3: Configure**
 
 1. Click the CodeMind extension icon in your toolbar
-2. Add your AI API key (Gemini, OpenRouter, Claude, or HuggingFace)
+2. Add your AI API key (Gemini, OpenAI, OpenRouter, Claude, or HuggingFace)
 3. Navigate to any GitHub repo and start analyzing!
-
-</details>
 
 ---
 

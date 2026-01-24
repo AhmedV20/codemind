@@ -4,7 +4,8 @@ import {
     RepositoryData,
     RepositoryStructure,
     ReleaseInfo,
-    KeyFile
+    KeyFile,
+    FileTreeItem
 } from '@shared/types';
 import { API_ENDPOINTS } from '@shared/constants';
 
@@ -83,17 +84,35 @@ export class GitHubClient {
 
     /**
      * Fetch complete repository data for analysis
+     * Uses scraped metadata from DOM when available (no API calls!)
      */
     async fetchRepositoryData(info: RepositoryInfo): Promise<RepositoryData> {
-        const [metadata, readme, structure, releases] = await Promise.all([
-            this.fetchMetadata(info.owner, info.repo),
-            this.fetchReadme(info.owner, info.repo),
-            this.fetchStructure(info.owner, info.repo, info.branch),
-            this.fetchReleases(info.owner, info.repo),
-        ]);
+        // Use scraped metadata if available (from DOM, no API needed!)
+        // Otherwise fall back to API call (will be rate limited)
+        let metadata: RepositoryMetadata;
 
-        // Fetch key files based on what exists in the structure
-        const keyFiles = await this.fetchKeyFiles(info.owner, info.repo, info.branch, structure);
+        if (info.scrapedMetadata) {
+            console.log('[GitHubClient] Using scraped metadata (no API call)');
+            metadata = this.convertScrapedToMetadata(info, info.scrapedMetadata);
+        } else {
+            console.log('[GitHubClient] Falling back to API for metadata');
+            metadata = await this.fetchMetadata(info.owner, info.repo);
+        }
+
+        // Fetch README using raw URL (not rate limited)
+        const readme = await this.fetchReadme(info.owner, info.repo, info.branch);
+
+        // Discover files by attempting to fetch known key files (no tree API needed!)
+        const keyFiles = await this.discoverKeyFiles(info.owner, info.repo, info.branch);
+
+        // Build a structure from discovered files
+        const structure: RepositoryStructure = {
+            tree: keyFiles.map(f => ({ path: f.path, type: 'blob' as const })),
+            truncated: false,
+        };
+
+        // Skip releases API call to avoid rate limits
+        const releases: ReleaseInfo[] = [];
 
         return {
             info,
@@ -103,6 +122,126 @@ export class GitHubClient {
             releases,
             keyFiles,
         };
+    }
+
+    /**
+     * Convert scraped metadata to full RepositoryMetadata format
+     */
+    private convertScrapedToMetadata(info: RepositoryInfo, scraped: NonNullable<RepositoryInfo['scrapedMetadata']>): RepositoryMetadata {
+        return {
+            name: info.repo,
+            fullName: `${info.owner}/${info.repo}`,
+            description: scraped.description,
+            stars: scraped.stars,
+            forks: scraped.forks,
+            watchers: scraped.watchers,
+            language: scraped.language,
+            topics: scraped.topics,
+            license: scraped.license,
+            createdAt: '', // Not available from DOM
+            updatedAt: '', // Not available from DOM
+            pushedAt: '', // Not available from DOM
+            defaultBranch: info.branch,
+            isArchived: scraped.isArchived,
+            isFork: scraped.isFork,
+        };
+    }
+
+    /**
+     * Discover key files by attempting to fetch them directly (no tree API needed!)
+     * Uses raw.githubusercontent.com which is NOT rate limited
+     */
+    async discoverKeyFiles(owner: string, repo: string, branch: string): Promise<KeyFile[]> {
+        const keyFiles: KeyFile[] = [];
+
+        // Fetch files in parallel batches, sorted by priority
+        const sortedFiles = [...KEY_FILES_CONFIG].sort((a, b) => a.priority - b.priority);
+
+        // Batch fetch to speed up discovery
+        const batchSize = 5;
+        for (let i = 0; i < sortedFiles.length && keyFiles.length < 10; i += batchSize) {
+            const batch = sortedFiles.slice(i, i + batchSize);
+
+            const results = await Promise.all(
+                batch.map(async (fileConfig) => {
+                    try {
+                        const content = await this.fetchFileContent(owner, repo, branch, fileConfig.path);
+                        if (content) {
+                            // Limit content size to avoid token limits
+                            const truncatedContent = content.length > 3000
+                                ? content.slice(0, 3000) + '\n... [truncated]'
+                                : content;
+
+                            return {
+                                path: fileConfig.path,
+                                content: truncatedContent,
+                                type: fileConfig.type,
+                            } as KeyFile;
+                        }
+                    } catch {
+                        // File doesn't exist, skip
+                    }
+                    return null;
+                })
+            );
+
+            // Add successfully fetched files
+            for (const result of results) {
+                if (result && keyFiles.length < 10) {
+                    keyFiles.push(result);
+                }
+            }
+        }
+
+        console.log(`[GitHubClient] Discovered ${keyFiles.length} key files`);
+        return keyFiles;
+    }
+
+    /**
+     * Fetch complete file tree using GitHub API
+     * Works WITHOUT authentication for public repos (60/hour limit)
+     * With token: 5000/hour limit
+     */
+    async fetchFullTree(owner: string, repo: string, branch: string): Promise<FileTreeItem[]> {
+        try {
+            const url = `${this.baseUrl}/repos/${owner}/${repo}/git/trees/${branch}?recursive=1`;
+
+            console.log('[GitHubClient] Fetching full tree from API');
+            const response = await fetch(url, {
+                headers: this.getHeaders()
+            });
+
+            if (!response.ok) {
+                if (response.status === 404) {
+                    console.warn('[GitHubClient] Repository or branch not found');
+                } else if (response.status === 403) {
+                    console.warn('[GitHubClient] Rate limit hit or access denied');
+                }
+                return [];
+            }
+
+            const data = await response.json();
+
+            // Filter to only files (blob type), exclude directories
+            const files = (data.tree || [])
+                .filter((item: any) => item.type === 'blob')
+                .map((item: any) => ({
+                    path: item.path,
+                    type: 'blob' as const,
+                    size: item.size || 0,
+                }));
+
+            console.log(`[GitHubClient] Fetched ${files.length} files from tree API`);
+
+            if (data.truncated) {
+                console.warn('[GitHubClient] Tree was truncated (>100k files). Some files may be missing.');
+            }
+
+            return files;
+        } catch (error) {
+            console.error('[GitHubClient] Error fetching full tree:', error);
+            return [];
+        }
     }
 
     /**

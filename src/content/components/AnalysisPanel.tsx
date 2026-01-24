@@ -71,7 +71,7 @@ const AnalysisPanel: React.FC = () => {
                     top: '12px',
                     right: '12px',
                     bottom: '12px',
-                    width: '500px',
+                    width: '550px',
                     backgroundColor: 'var(--glass-bg)',
                     backdropFilter: 'blur(40px) saturate(180%)',
                     WebkitBackdropFilter: 'blur(40px) saturate(180%)',

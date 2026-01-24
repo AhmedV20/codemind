@@ -4,6 +4,7 @@ import { ClaudeProvider } from './providers/claude';
 import { GeminiProvider } from './providers/gemini';
 import { HuggingFaceProvider } from './providers/huggingface';
 import { OpenRouterProvider } from './providers/openrouter';
+import { OpenAIProvider } from './providers/openai';
 
 /**
  * Factory for creating AI provider instances
@@ -44,6 +45,14 @@ export function createProvider(settings: ExtensionSettings): AIProvider {
             return new OpenRouterProvider(config.apiKey, config.model);
         }
 
+        case AIProviderEnum.OPENAI: {
+            const config = providers[AIProviderEnum.OPENAI];
+            if (!config.apiKey) {
+                throw new Error('OpenAI API key not configured. Please add your API key in the extension settings.');
+            }
+            return new OpenAIProvider(config.apiKey, config.model);
+        }
+
         default:
             throw new Error(`Unknown AI provider: ${selectedProvider}`);
     }
@@ -62,6 +71,8 @@ export function getProviderDisplayName(provider: AIProviderEnum): string {
             return 'HuggingFace';
         case AIProviderEnum.OPENROUTER:
             return 'OpenRouter';
+        case AIProviderEnum.OPENAI:
+            return 'OpenAI';
         default:
             return provider;
     }
@@ -80,7 +91,10 @@ export function getProviderSetupUrl(provider: AIProviderEnum): string {
             return 'https://huggingface.co/settings/tokens';
         case AIProviderEnum.OPENROUTER:
             return 'https://openrouter.ai/settings/keys';
+        case AIProviderEnum.OPENAI:
+            return 'https://platform.openai.com/api-keys';
         default:
             return '';
     }
 }
+

@@ -1,4 +1,4 @@
-import { AIProvider, ExtensionSettings } from './types';
+import { AIProvider, ExtensionSettings, AnalysisStrategyType } from './types';
 
 // Default settings for new users
 export const DEFAULT_SETTINGS: ExtensionSettings = {
@@ -21,12 +21,22 @@ export const DEFAULT_SETTINGS: ExtensionSettings = {
                 apiKey: '',
                 model: 'deepseek/deepseek-r1-0528:free',
             },
+            [AIProvider.OPENAI]: {
+                apiKey: '',
+                model: 'gpt-4o-mini',
+            },
         },
     },
     analysis: {
         depth: 'standard',
         autoAnalyze: false,
         cacheDuration: 24, // 24 hours
+        strategyConfig: {                    // NEW
+            type: AnalysisStrategyType.CLIENT_SIDE,
+            tokenBudget: 80000,
+            maxFiles: 50,
+            priorityThreshold: 50,
+        },
     },
     ui: {
         panelPosition: 'right',
@@ -45,6 +55,7 @@ export const API_ENDPOINTS = {
     GEMINI_API: 'https://generativelanguage.googleapis.com/v1beta',
     HUGGINGFACE_API: 'https://router.huggingface.co/v1',
     OPENROUTER_API: 'https://openrouter.ai/api/v1',
+    OPENAI_API: 'https://api.openai.com/v1',
 };
 
 // Storage keys
@@ -52,6 +63,28 @@ export const STORAGE_KEYS = {
     SETTINGS: 'github-ai-analyzer-settings',
     CACHE_PREFIX: 'github-ai-analyzer-cache:',
     CONVERSATION_PREFIX: 'github-ai-analyzer-conversation:',
+};
+
+// File prioritization weights
+export const PRIORITY_WEIGHTS = {
+    README: 100,
+    PACKAGE_JSON: 100,
+    ENTRY_POINT: 90,
+    CONFIG: 80,
+    SOURCE: 70,
+    API_ROUTE: 65,
+    COMPONENT: 60,
+    DOCS: 50,
+    TEST: 20,
+    OTHER: 10,
+};
+
+// Token estimation constants
+export const TOKEN_ESTIMATION = {
+    CHARS_PER_TOKEN: 4,  // Conservative estimate for code
+    MAX_FILE_SIZE: 50000, // bytes
+    STRUCTURE_TOKENS: 500,
+    METADATA_TOKENS: 200,
 };
 
 // Analysis prompt template

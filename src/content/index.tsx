@@ -2,6 +2,7 @@ import React from 'react';
 import { createRoot, Root } from 'react-dom/client';
 import App from './App';
 import './styles/global.css';
+import { scrapeRepositoryMetadata, scrapeDefaultBranch } from './utils/domScraper';
 
 // Configuration
 const INJECTION_TIMEOUT = 500;
@@ -26,8 +27,8 @@ function isRepositoryPage(): boolean {
     return !!repoNav;
 }
 
-// Extract repository information from the page URL
-function extractRepoInfo(): { owner: string; repo: string; branch: string } | null {
+// Extract repository information from the page URL and DOM
+function extractRepoInfo(): { owner: string; repo: string; branch: string; scrapedMetadata: ReturnType<typeof scrapeRepositoryMetadata> } | null {
     const pathParts = window.location.pathname.split('/').filter(Boolean);
 
     if (pathParts.length < 2) return null;
@@ -42,13 +43,13 @@ function extractRepoInfo(): { owner: string; repo: string; branch: string } | nu
         branch = pathParts[3];
     } else {
         // Try to get from DOM
-        const branchSelector = document.querySelector('[data-hotkey="w"] span.Text-sc-17v1xeu-0, #branch-select-menu span');
-        if (branchSelector) {
-            branch = branchSelector.textContent?.trim() || 'main';
-        }
+        branch = scrapeDefaultBranch();
     }
 
-    return { owner, repo, branch };
+    // Scrape metadata from the GitHub page DOM (no API needed!)
+    const scrapedMetadata = scrapeRepositoryMetadata();
+
+    return { owner, repo, branch, scrapedMetadata };
 }
 
 // Find the repository navigation bar (where Code, Issues, Pull requests, Insights are)
