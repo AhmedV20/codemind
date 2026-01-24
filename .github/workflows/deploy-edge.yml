@@ -189,13 +189,6 @@ jobs:
           api-key: ${{ secrets.EDGE_API_KEY }}
           client-id: ${{ secrets.EDGE_CLIENT_ID }}
           upload-only: true
-          notes-for-certification: |
-            v${{ needs.validate.outputs.version }} release
-            - Bug fixes and performance improvements
-            - CSS isolation fixes
-            - GitHub API optimization
-            
-            GitHub: https://github.com/AhmedV20/codemind
 
       - name: ✅ Upload success
         if: success()

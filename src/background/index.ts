@@ -76,6 +76,29 @@ chrome.runtime.onMessage.addListener((
             });
             return true; // Async response
 
+        case 'GET_CACHED_REPOS':
+            cacheManager.getCachedRepos().then(repos => {
+                sendResponse({ repos });
+            });
+            return true; // Async response
+
+        case 'DELETE_REPO_CACHE':
+            if (message.data) {
+                const { fullName, branch } = message.data as { fullName: string; branch: string };
+                if (fullName && branch) {
+                    cacheManager.deleteRepo(fullName, branch).then(() => {
+                        sendResponse({ success: true });
+                    }).catch(error => {
+                        sendResponse({ error: error.message });
+                    });
+                } else {
+                    sendResponse({ error: 'Missing fullName or branch' });
+                }
+            } else {
+                sendResponse({ error: 'No data provided' });
+            }
+            return true; // Async response
+
         case 'CHECK_CACHE':
             if (message.data) {
                 const { owner, repo, branch } = message.data as { owner: string; repo: string; branch: string };

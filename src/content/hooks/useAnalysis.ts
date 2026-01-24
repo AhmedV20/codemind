@@ -14,7 +14,30 @@ const PROVIDER_NAMES: Record<string, string> = {
     claude: 'Claude',
     huggingface: 'HuggingFace',
     openrouter: 'OpenRouter',
+    openai: 'OpenAI',
 };
+
+// Throttle settings
+const THROTTLE_COOLDOWN_MS = 30000; // 30 seconds
+const THROTTLE_MAX_REQUESTS = 2;
+const THROTTLE_STORAGE_KEY = 'codemind-throttle';
+
+function getThrottleState(): { requests: number[] } {
+    try {
+        const data = localStorage.getItem(THROTTLE_STORAGE_KEY);
+        return data ? JSON.parse(data) : { requests: [] };
+    } catch {
+        return { requests: [] };
+    }
+}
+
+function saveThrottleState(state: { requests: number[] }): void {
+    try {
+        localStorage.setItem(THROTTLE_STORAGE_KEY, JSON.stringify(state));
+    } catch {
+        // Ignore storage errors
+    }
+}
 
 interface AnalysisStore extends AnalysisState, ChatState {
     // Repository info
@@ -29,6 +52,10 @@ interface AnalysisStore extends AnalysisState, ChatState {
     // Active tab
     activeTab: 'home' | 'settings';
 
+    // Throttle state
+    cooldownRemaining: number;
+    setCooldownRemaining: (ms: number) => void;
+
     // Actions
     setRepoInfo: (info: RepositoryInfo) => void;
     startAnalysis: (forceRefresh?: boolean) => void;
@@ -42,6 +69,7 @@ interface AnalysisStore extends AnalysisState, ChatState {
     saveSettings: (settings: ExtensionSettings) => Promise<boolean>;
     saveGitHubToken: (token: string) => Promise<boolean>;
     clearCache: () => Promise<boolean>;
+    deleteCurrentRepoCache: () => Promise<boolean>;
     sendChatMessage: (message: string) => void;
     reset: () => void;
 }
@@ -67,6 +95,10 @@ export const useAnalysisStore = create<AnalysisStore>((set, get) => ({
     chatStatus: 'idle',
     chatStreamingContent: '',
     chatError: null,
+
+    // Throttle state
+    cooldownRemaining: 0,
+    setCooldownRemaining: (ms) => set({ cooldownRemaining: ms }),
 
     // Actions
     setRepoInfo: (info) => set({ repoInfo: info }),
@@ -174,6 +206,42 @@ export const useAnalysisStore = create<AnalysisStore>((set, get) => ({
         }
     },
 
+    deleteCurrentRepoCache: async () => {
+        const { repoInfo } = get();
+        if (!repoInfo) return false;
+
+        try {
+            await new Promise<void>((resolve, reject) => {
+                chrome.runtime.sendMessage({
+                    type: 'DELETE_REPO_CACHE',
+                    data: {
+                        fullName: `${repoInfo.owner}/${repoInfo.repo}`,
+                        branch: repoInfo.branch
+                    }
+                }, (response) => {
+                    if (response?.error) reject(new Error(response.error));
+                    else resolve();
+                });
+            });
+            // Reset state (same as clearCache)
+            set({
+                hasCachedAnalysis: false,
+                status: 'idle',
+                analysis: null,
+                streamingContent: '',
+                error: null,
+                chatMessages: [],
+                chatStatus: 'idle',
+                chatStreamingContent: '',
+                chatError: null,
+            });
+            return true;
+        } catch (error) {
+            console.error('Failed to delete repo cache:', error);
+            return false;
+        }
+    },
+
     saveGitHubToken: async (token: string) => {
         const { settings, saveSettings } = get();
         if (!settings) return false;
@@ -236,8 +304,25 @@ export const useAnalysisStore = create<AnalysisStore>((set, get) => ({
     },
 
     startAnalysis: async (forceRefresh = false) => {
-        const { repoInfo, hasApiKey, hasCachedAnalysis, settings } = get();
+        const { repoInfo, hasApiKey, hasCachedAnalysis, settings, setCooldownRemaining } = get();
         if (!repoInfo) return;
+
+        // Check throttle state (only for non-cached requests)
+        const now = Date.now();
+        const throttle = getThrottleState();
+        const recentRequests = throttle.requests.filter(
+            (t: number) => now - t < THROTTLE_COOLDOWN_MS
+        );
+
+        // If not just loading from cache, check throttle
+        if (forceRefresh || !hasCachedAnalysis) {
+            if (recentRequests.length >= THROTTLE_MAX_REQUESTS) {
+                const oldestRequest = Math.min(...recentRequests);
+                const remaining = THROTTLE_COOLDOWN_MS - (now - oldestRequest);
+                setCooldownRemaining(remaining);
+                return;
+            }
+        }
 
         // For forceRefresh, check API key directly from settings
         let apiKeyValid = hasApiKey;
@@ -261,6 +346,9 @@ export const useAnalysisStore = create<AnalysisStore>((set, get) => ({
             await get().loadCachedAnalysis();
             return;
         }
+
+        // Track this request for throttling
+        saveThrottleState({ requests: [...recentRequests, now] });
 
         // Clear current analysis when regenerating
         set({

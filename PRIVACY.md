@@ -10,8 +10,8 @@ CodeMind is a browser extension that provides AI-powered analysis of GitHub repo
 
 ### What We Collect
 - **API Keys:** Stored locally in your browser using Chrome's storage API. Never transmitted to our servers.
-- **Repository Data:** Temporarily fetched from GitHub's public API for analysis. Not stored permanently.
-- **GitHub Token (Optional):** If you add a GitHub token for rate limit handling, it's stored locally only.
+- **Repository Data:** Temporarily fetched from GitHub for analysis. Not stored permanently.
+- **Cached Analyses:** Stored locally and automatically expire after 24 hours.
 
 ### What We Don't Collect
 - Personal information
@@ -28,9 +28,10 @@ All data is stored **locally on your device**:
 ## Third-Party Services
 
 CodeMind connects to:
-1. **GitHub API** - To fetch public repository information
+1. **GitHub** - To fetch public repository information (no authentication required)
 2. **AI Providers** (user-selected):
    - Google Gemini API
+   - OpenAI API
    - Anthropic Claude API
    - HuggingFace Inference API
    - OpenRouter API

@@ -1,12 +1,12 @@
 import React, { useRef, useEffect, useMemo, useState } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
-import { Brain, Sparkles, AlertCircle, Settings, MessageCircle, Package, Key, ChevronDown, Cpu, Check } from 'lucide-react';
+import { Brain, Sparkles, AlertCircle, Settings, Package, Key, ChevronDown, Cpu, Check, Send, Loader2, RefreshCw, Clock } from 'lucide-react';
 import { useAnalysisStore } from '../hooks/useAnalysis';
-import ChatInterface from './ChatInterface';
 import ThinkingBox from './ThinkingBox';
-import GitHubTokenModal from './GitHubTokenModal';
+import AnalyzedFilesDropdown from './AnalyzedFilesDropdown';
 import { parseThinkingContent } from '../utils/thinkingParser';
+import { SUGGESTED_QUESTIONS } from '@shared/constants';
 
 const HomeTab: React.FC = () => {
     const {
@@ -21,15 +21,21 @@ const HomeTab: React.FC = () => {
         startAnalysis,
         setActiveTab,
         setSelectedProvider,
-        saveGitHubToken
+        chatMessages,
+        chatStatus,
+        chatStreamingContent,
+        chatError,
+        sendChatMessage,
+        cooldownRemaining,
+        setCooldownRemaining
     } = useAnalysisStore();
 
-    const [showChat, setShowChat] = useState(false);
-    const [showRateLimitModal, setShowRateLimitModal] = useState(false);
+    const [chatInput, setChatInput] = useState('');
     const [providerDropdownOpen, setProviderDropdownOpen] = useState(false);
     const providerDropdownRef = useRef<HTMLDivElement>(null);
     const contentRef = useRef<HTMLDivElement>(null);
     const bottomRef = useRef<HTMLDivElement>(null);
+    const chatInputRef = useRef<HTMLInputElement>(null);
 
     const displayContent = analysis?.content || streamingContent;
     const isLoading = status === 'loading';
@@ -67,8 +73,8 @@ const HomeTab: React.FC = () => {
                 return;
             }
 
-            // Lerp factor: 0.12 provides smooth but responsive scrolling
-            container.scrollTop = currentScroll + diff * 0.12;
+            // Lerp factor: 0.25 for faster, more responsive scrolling
+            container.scrollTop = currentScroll + diff * 0.25;
             animationFrameId = requestAnimationFrame(smoothScroll);
         };
 
@@ -82,6 +88,28 @@ const HomeTab: React.FC = () => {
         };
     }, [streamingContent, isStreaming]);
 
+    // Auto-scroll for chat messages and chat streaming
+    useEffect(() => {
+        if (contentRef.current && (chatMessages.length > 0 || chatStreamingContent)) {
+            contentRef.current.scrollTo({
+                top: contentRef.current.scrollHeight,
+                behavior: 'smooth'
+            });
+        }
+    }, [chatMessages, chatStreamingContent]);
+
+    // Ensure final scroll when analysis streaming ends
+    useEffect(() => {
+        if (status === 'complete' && contentRef.current) {
+            // Use timeout to ensure DOM has updated
+            setTimeout(() => {
+                if (contentRef.current) {
+                    contentRef.current.scrollTop = contentRef.current.scrollHeight;
+                }
+            }, 100);
+        }
+    }, [status]);
+
     // Close dropdown on click outside
     useEffect(() => {
         const handleClickOutside = (event: MouseEvent) => {
@@ -92,13 +120,22 @@ const HomeTab: React.FC = () => {
         document.addEventListener('mousedown', handleClickOutside);
         return () => document.removeEventListener('mousedown', handleClickOutside);
     }, []);
-
-    // Auto-show rate limit modal when error detected
+    // Cooldown timer effect
     useEffect(() => {
-        if (isGitHubAuthError) {
-            setShowRateLimitModal(true);
-        }
-    }, [isGitHubAuthError]);
+        if (cooldownRemaining <= 0) return;
+
+        const timer = setInterval(() => {
+            const newRemaining = cooldownRemaining - 1000;
+            if (newRemaining <= 0) {
+                setCooldownRemaining(0);
+                clearInterval(timer);
+            } else {
+                setCooldownRemaining(newRemaining);
+            }
+        }, 1000);
+
+        return () => clearInterval(timer);
+    }, [cooldownRemaining, setCooldownRemaining]);
 
     // No API keys configured - first time setup
     if (isIdle && !displayContent && noProvidersConfigured) {
@@ -317,36 +354,112 @@ const HomeTab: React.FC = () => {
                         )}
                     </div>
                 )}
-
-                <button
-                    onClick={() => startAnalysis()}
-                    style={{
-                        display: 'inline-flex',
+                {/* Cooldown Timer or Analyze Button */}
+                {cooldownRemaining > 0 ? (
+                    <div style={{
+                        display: 'flex',
+                        flexDirection: 'column',
                         alignItems: 'center',
-                        gap: '8px',
-                        padding: '14px 28px',
-                        fontSize: '14px',
-                        fontWeight: 500,
-                        color: '#fff',
-                        background: 'linear-gradient(135deg, rgba(139, 92, 246, 0.95) 0%, rgba(99, 102, 241, 0.95) 50%, rgba(59, 130, 246, 0.95) 100%)',
-                        border: 'none',
-                        borderRadius: '50px',
-                        cursor: 'pointer',
-                        transition: 'all 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
-                        boxShadow: '0 4px 16px rgba(139, 92, 246, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.2)',
-                    }}
-                    onMouseEnter={(e) => {
-                        e.currentTarget.style.transform = 'translateY(-2px) scale(1.02)';
-                        e.currentTarget.style.boxShadow = '0 8px 24px rgba(139, 92, 246, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.3)';
-                    }}
-                    onMouseLeave={(e) => {
-                        e.currentTarget.style.transform = 'translateY(0) scale(1)';
-                        e.currentTarget.style.boxShadow = '0 4px 16px rgba(139, 92, 246, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.2)';
-                    }}
-                >
-                    <Sparkles size={16} />
-                    Analyze Repository
-                </button>
+                        gap: '12px',
+                    }}>
+                        {/* Circular timer */}
+                        <div style={{
+                            position: 'relative',
+                            width: '80px',
+                            height: '80px',
+                        }}>
+                            <svg
+                                width="80"
+                                height="80"
+                                style={{ transform: 'rotate(-90deg)' }}
+                            >
+                                {/* Background circle */}
+                                <circle
+                                    cx="40"
+                                    cy="40"
+                                    r="35"
+                                    fill="none"
+                                    stroke="rgba(139, 92, 246, 0.15)"
+                                    strokeWidth="6"
+                                />
+                                {/* Animated progress circle */}
+                                <circle
+                                    cx="40"
+                                    cy="40"
+                                    r="35"
+                                    fill="none"
+                                    stroke="url(#cooldown-gradient)"
+                                    strokeWidth="6"
+                                    strokeLinecap="round"
+                                    strokeDasharray={2 * Math.PI * 35}
+                                    strokeDashoffset={2 * Math.PI * 35 * (1 - cooldownRemaining / 30000)}
+                                    style={{ transition: 'stroke-dashoffset 1s linear' }}
+                                />
+                                <defs>
+                                    <linearGradient id="cooldown-gradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                                        <stop offset="0%" stopColor="#8b5cf6" />
+                                        <stop offset="100%" stopColor="#3b82f6" />
+                                    </linearGradient>
+                                </defs>
+                            </svg>
+                            {/* Timer text */}
+                            <div style={{
+                                position: 'absolute',
+                                top: '50%',
+                                left: '50%',
+                                transform: 'translate(-50%, -50%)',
+                                display: 'flex',
+                                flexDirection: 'column',
+                                alignItems: 'center',
+                            }}>
+                                <Clock size={16} style={{ color: '#8b5cf6', marginBottom: '2px' }} />
+                                <span style={{
+                                    fontSize: '14px',
+                                    fontWeight: 600,
+                                    color: 'var(--gai-text-color)',
+                                }}>
+                                    {Math.ceil(cooldownRemaining / 1000)}s
+                                </span>
+                            </div>
+                        </div>
+                        <span style={{
+                            fontSize: '13px',
+                            color: 'var(--gai-text-muted)',
+                        }}>
+                            Cooldown active
+                        </span>
+                    </div>
+                ) : (
+                    <button
+                        onClick={() => startAnalysis()}
+                        style={{
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '8px',
+                            padding: '14px 28px',
+                            fontSize: '14px',
+                            fontWeight: 500,
+                            color: '#fff',
+                            background: 'linear-gradient(135deg, rgba(139, 92, 246, 0.95) 0%, rgba(99, 102, 241, 0.95) 50%, rgba(59, 130, 246, 0.95) 100%)',
+                            border: 'none',
+                            borderRadius: '50px',
+                            cursor: 'pointer',
+                            transition: 'all 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
+                            boxShadow: '0 4px 16px rgba(139, 92, 246, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.2)',
+                        }}
+                        onMouseEnter={(e) => {
+                            e.currentTarget.style.transform = 'translateY(-2px) scale(1.02)';
+                            e.currentTarget.style.boxShadow = '0 8px 24px rgba(139, 92, 246, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.3)';
+                        }}
+                        onMouseLeave={(e) => {
+                            e.currentTarget.style.transform = 'translateY(0) scale(1)';
+                            e.currentTarget.style.boxShadow = '0 4px 16px rgba(139, 92, 246, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.2)';
+                        }}
+                    >
+                        <Sparkles size={16} />
+                        Analyze Repository
+                    </button>
+                )}
 
                 <p style={{
                     fontSize: '12px',
@@ -354,7 +467,9 @@ const HomeTab: React.FC = () => {
                     marginTop: '16px',
                     maxWidth: '260px',
                 }}>
-                    Get AI-powered insights about this repository in seconds
+                    {cooldownRemaining > 0
+                        ? 'Rate limiting protects API resources'
+                        : 'Get AI-powered insights about this repository in seconds'}
                 </p>
             </div>
         );
@@ -479,42 +594,11 @@ const HomeTab: React.FC = () => {
                         lineHeight: 1.5,
                     }}>
                         {isGitHubAuthError
-                            ? 'GitHub API rate limit exceeded. Add a token for 5,000 requests/hour or wait ~60 minutes.'
+                            ? 'GitHub API rate limit reached. Please wait ~60 minutes and try again.'
                             : error}
                     </p>
 
                     <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', justifyContent: 'center' }}>
-                        {isGitHubAuthError && (
-                            <button
-                                onClick={() => setShowRateLimitModal(true)}
-                                style={{
-                                    display: 'inline-flex',
-                                    alignItems: 'center',
-                                    gap: '8px',
-                                    padding: '12px 24px',
-                                    fontSize: '14px',
-                                    fontWeight: 600,
-                                    color: '#fff',
-                                    background: 'linear-gradient(135deg, #8b5cf6 0%, #6366f1 100%)',
-                                    border: 'none',
-                                    borderRadius: '10px',
-                                    cursor: 'pointer',
-                                    transition: 'all 0.2s ease',
-                                    boxShadow: '0 4px 14px rgba(139, 92, 246, 0.35)',
-                                }}
-                                onMouseEnter={(e) => {
-                                    e.currentTarget.style.transform = 'translateY(-2px)';
-                                    e.currentTarget.style.boxShadow = '0 6px 20px rgba(139, 92, 246, 0.45)';
-                                }}
-                                onMouseLeave={(e) => {
-                                    e.currentTarget.style.transform = 'translateY(0)';
-                                    e.currentTarget.style.boxShadow = '0 4px 14px rgba(139, 92, 246, 0.35)';
-                                }}
-                            >
-                                <Key size={16} />
-                                Add GitHub Token
-                            </button>
-                        )}
                         <button
                             onClick={() => startAnalysis(true)}
                             style={{
@@ -524,15 +608,13 @@ const HomeTab: React.FC = () => {
                                 padding: '12px 24px',
                                 fontSize: '14px',
                                 fontWeight: 600,
-                                color: isGitHubAuthError ? 'var(--gai-text-muted)' : '#fff',
-                                background: isGitHubAuthError
-                                    ? 'var(--gai-bg-tertiary)'
-                                    : 'linear-gradient(135deg, #f85149 0%, #da3633 100%)',
-                                border: isGitHubAuthError ? '1px solid var(--gai-border-color)' : 'none',
+                                color: '#fff',
+                                background: 'linear-gradient(135deg, #f85149 0%, #da3633 100%)',
+                                border: 'none',
                                 borderRadius: '10px',
                                 cursor: 'pointer',
                                 transition: 'all 0.2s ease',
-                                boxShadow: isGitHubAuthError ? 'none' : '0 4px 14px rgba(248, 81, 73, 0.35)',
+                                boxShadow: '0 4px 14px rgba(248, 81, 73, 0.35)',
                             }}
                             onMouseEnter={(e) => {
                                 e.currentTarget.style.transform = 'translateY(-2px)';
@@ -546,14 +628,6 @@ const HomeTab: React.FC = () => {
                         </button>
                     </div>
                 </div>
-
-                {/* GitHub Rate Limit Modal */}
-                <GitHubTokenModal
-                    isOpen={showRateLimitModal}
-                    onClose={() => setShowRateLimitModal(false)}
-                    onSaveToken={saveGitHubToken}
-                    onRetry={() => startAnalysis(true)}
-                />
             </>
         );
     }
@@ -654,16 +728,45 @@ const HomeTab: React.FC = () => {
         );
     }
 
-    // Analysis content
+    // Analysis content with integrated chat
+    const isChatLoading = chatStatus === 'loading';
+    const suggestedQuestions = analysis?.sections?.downloadInfo?.hasReleases
+        ? SUGGESTED_QUESTIONS.hasReleases
+        : SUGGESTED_QUESTIONS.default;
+
+    const handleSendMessage = (e?: React.FormEvent) => {
+        e?.preventDefault();
+        if (chatInput.trim() && !isChatLoading) {
+            sendChatMessage(chatInput.trim());
+            setChatInput('');
+        }
+    };
+
+    const handleSuggestedQuestion = (question: string) => {
+        if (!isChatLoading) {
+            sendChatMessage(question);
+        }
+    };
+
     return (
         <>
-            <div ref={contentRef} style={{ padding: '20px', flex: 1, overflowY: 'auto' }}>
+            <div ref={contentRef} style={{ padding: '20px', flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column' }}>
+                {/* Analysis Content */}
                 {displayContent && parsedContent && (
                     <div className="gai-markdown">
                         {/* Show thinking box if AI returned thinking content */}
                         {parsedContent.hasThinking && parsedContent.thinking && (
-                            <ThinkingBox thinking={parsedContent.thinking} />
+                            <ThinkingBox
+                                thinking={parsedContent.thinking}
+                                isThinking={!parsedContent.isComplete}
+                            />
                         )}
+
+                        {/* Analyzed Files Dropdown - below thinking, above content */}
+                        {analysis?.strategyResult?.files && analysis.strategyResult.files.length > 0 && (
+                            <AnalyzedFilesDropdown files={analysis.strategyResult.files} />
+                        )}
+
                         <ReactMarkdown remarkPlugins={[remarkGfm]}>{parsedContent.content}</ReactMarkdown>
                         {isStreaming && (
                             <span style={{
@@ -676,8 +779,6 @@ const HomeTab: React.FC = () => {
                                 animation: 'gai-blink 1s infinite',
                             }} />
                         )}
-                        {/* Auto-scroll anchor */}
-                        <div ref={bottomRef} />
                     </div>
                 )}
 
@@ -701,58 +802,304 @@ const HomeTab: React.FC = () => {
                         Loaded from cache • {new Date(analysis.generatedAt).toLocaleString()}
                     </div>
                 )}
-            </div>
 
-            {/* Chat section */}
-            <div style={{ borderTop: '1px solid var(--gai-border-color)', backgroundColor: 'var(--gai-bg-secondary)' }}>
-                {!showChat ? (
-                    <button
-                        onClick={() => setShowChat(true)}
-                        disabled={status !== 'complete'}
-                        style={{
-                            width: '100%',
-                            padding: '14px 20px',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            gap: '8px',
-                            border: 'none',
-                            backgroundColor: 'transparent',
-                            color: status === 'complete' ? '#8b5cf6' : 'var(--gai-text-muted)',
-                            cursor: status === 'complete' ? 'pointer' : 'not-allowed',
-                            fontSize: '14px',
-                            fontWeight: 500,
-                            transition: 'all 0.2s ease',
-                        }}
-                        onMouseEnter={(e) => {
-                            if (status === 'complete') {
-                                e.currentTarget.style.backgroundColor = 'rgba(139, 92, 246, 0.08)';
-                            }
-                        }}
-                        onMouseLeave={(e) => {
-                            e.currentTarget.style.backgroundColor = 'transparent';
-                        }}
-                    >
-                        <MessageCircle size={16} />
-                        Ask a question about this repository
-                    </button>
-                ) : (
-                    <ChatInterface onClose={() => setShowChat(false)} />
+                {/* Integrated Chat Section - appears after analysis complete */}
+                {status === 'complete' && (
+                    <div style={{
+                        marginTop: '24px',
+                        paddingTop: '20px',
+                        borderTop: '1px solid var(--gai-border-muted)',
+                        animation: 'gai-fade-in 0.4s ease-out',
+                    }}>
+                        {/* Suggested Questions - show when no chat messages */}
+                        {chatMessages.length === 0 && !chatStreamingContent && (
+                            <div style={{ marginBottom: '16px' }}>
+                                <div style={{
+                                    fontSize: '12px',
+                                    color: 'var(--gai-text-muted)',
+                                    marginBottom: '12px',
+                                    fontWeight: 500,
+                                }}>
+                                    ✨ Ask a follow-up question
+                                </div>
+                                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                                    {suggestedQuestions.slice(0, 4).map((question, i) => (
+                                        <button
+                                            key={i}
+                                            onClick={() => handleSuggestedQuestion(question)}
+                                            disabled={isChatLoading}
+                                            style={{
+                                                padding: '10px 16px',
+                                                fontSize: '13px',
+                                                background: 'linear-gradient(135deg, rgba(139, 92, 246, 0.08) 0%, rgba(59, 130, 246, 0.08) 100%)',
+                                                border: '1px solid rgba(139, 92, 246, 0.2)',
+                                                borderRadius: '20px',
+                                                cursor: isChatLoading ? 'not-allowed' : 'pointer',
+                                                color: 'var(--gai-text-color)',
+                                                transition: 'all 0.2s ease',
+                                                opacity: isChatLoading ? 0.5 : 1,
+                                                fontWeight: 400,
+                                            }}
+                                            onMouseEnter={(e) => {
+                                                if (!isChatLoading) {
+                                                    e.currentTarget.style.background = 'linear-gradient(135deg, rgba(139, 92, 246, 0.15) 0%, rgba(59, 130, 246, 0.15) 100%)';
+                                                    e.currentTarget.style.borderColor = 'rgba(139, 92, 246, 0.4)';
+                                                    e.currentTarget.style.transform = 'translateY(-1px)';
+                                                }
+                                            }}
+                                            onMouseLeave={(e) => {
+                                                e.currentTarget.style.background = 'linear-gradient(135deg, rgba(139, 92, 246, 0.08) 0%, rgba(59, 130, 246, 0.08) 100%)';
+                                                e.currentTarget.style.borderColor = 'rgba(139, 92, 246, 0.2)';
+                                                e.currentTarget.style.transform = 'translateY(0)';
+                                            }}
+                                        >
+                                            {question}
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Chat Messages */}
+                        {chatMessages.length > 0 && (
+                            <div style={{
+                                display: 'flex',
+                                flexDirection: 'column',
+                                gap: '12px',
+                                marginBottom: '16px',
+                            }}>
+                                {chatMessages.map((msg) => (
+                                    <div
+                                        key={msg.id}
+                                        style={{
+                                            padding: '12px 16px',
+                                            borderRadius: msg.role === 'user' ? '18px 18px 4px 18px' : '18px 18px 18px 4px',
+                                            maxWidth: '90%',
+                                            background: msg.role === 'user'
+                                                ? 'linear-gradient(135deg, #8b5cf6 0%, #6366f1 100%)'
+                                                : 'var(--gai-bg-secondary)',
+                                            border: msg.role === 'assistant' ? '1px solid var(--gai-border-muted)' : 'none',
+                                            color: msg.role === 'user' ? '#ffffff' : 'var(--gai-text-color)',
+                                            alignSelf: msg.role === 'user' ? 'flex-end' : 'flex-start',
+                                            boxShadow: msg.role === 'user'
+                                                ? '0 2px 8px rgba(139, 92, 246, 0.25)'
+                                                : '0 1px 4px rgba(0, 0, 0, 0.05)',
+                                        }}
+                                    >
+                                        {msg.role === 'assistant' ? (
+                                            <div className="gai-markdown" style={{ fontSize: '13px' }}>
+                                                {(() => {
+                                                    const parsed = parseThinkingContent(msg.content);
+                                                    return (
+                                                        <>
+                                                            {parsed.hasThinking && parsed.thinking && (
+                                                                <ThinkingBox
+                                                                    thinking={parsed.thinking}
+                                                                    isThinking={!parsed.isComplete}
+                                                                />
+                                                            )}
+                                                            <ReactMarkdown remarkPlugins={[remarkGfm]}>{parsed.content}</ReactMarkdown>
+                                                        </>
+                                                    );
+                                                })()}
+                                            </div>
+                                        ) : (
+                                            <span style={{ fontSize: '13px' }}>{msg.content}</span>
+                                        )}
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+
+                        {/* Streaming Response */}
+                        {chatStreamingContent && (
+                            <div
+                                style={{
+                                    padding: '12px 16px',
+                                    borderRadius: '18px 18px 18px 4px',
+                                    maxWidth: '90%',
+                                    background: 'var(--gai-bg-secondary)',
+                                    border: '1px solid var(--gai-border-muted)',
+                                    color: 'var(--gai-text-color)',
+                                    alignSelf: 'flex-start',
+                                    marginBottom: '16px',
+                                }}
+                            >
+                                <div className="gai-markdown" style={{ fontSize: '13px' }}>
+                                    {(() => {
+                                        const parsed = parseThinkingContent(chatStreamingContent);
+                                        return (
+                                            <>
+                                                {parsed.hasThinking && parsed.thinking && (
+                                                    <ThinkingBox
+                                                        thinking={parsed.thinking}
+                                                        isThinking={!parsed.isComplete}
+                                                    />
+                                                )}
+                                                <ReactMarkdown remarkPlugins={[remarkGfm]}>{parsed.content}</ReactMarkdown>
+                                            </>
+                                        );
+                                    })()}
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Loading indicator */}
+                        {isChatLoading && !chatStreamingContent && (
+                            <div style={{
+                                padding: '12px 16px',
+                                borderRadius: '18px 18px 18px 4px',
+                                maxWidth: '90%',
+                                background: 'var(--gai-bg-secondary)',
+                                border: '1px solid var(--gai-border-muted)',
+                                alignSelf: 'flex-start',
+                                marginBottom: '16px',
+                            }}>
+                                <ThinkingBox isLoading={true} />
+                            </div>
+                        )}
+
+                        {/* Chat Error */}
+                        {chatError && !isChatLoading && (
+                            <div style={{
+                                display: 'flex',
+                                alignItems: 'flex-start',
+                                gap: '10px',
+                                padding: '12px 14px',
+                                borderRadius: '12px',
+                                maxWidth: '90%',
+                                backgroundColor: 'rgba(239, 68, 68, 0.1)',
+                                border: '1px solid rgba(239, 68, 68, 0.2)',
+                                alignSelf: 'flex-start',
+                                marginBottom: '16px',
+                            }}>
+                                <AlertCircle size={16} style={{ color: '#f87171', flexShrink: 0, marginTop: '2px' }} />
+                                <div style={{ flex: 1 }}>
+                                    <div style={{ fontSize: '12px', fontWeight: 600, color: '#f87171', marginBottom: '4px' }}>
+                                        Error
+                                    </div>
+                                    <div style={{ fontSize: '12px', color: 'var(--gai-text-muted)', lineHeight: 1.4 }}>
+                                        {chatError}
+                                    </div>
+                                    <button
+                                        onClick={() => {
+                                            const lastUserMsg = chatMessages.filter(m => m.role === 'user').pop();
+                                            if (lastUserMsg) sendChatMessage(lastUserMsg.content);
+                                        }}
+                                        style={{
+                                            marginTop: '8px',
+                                            display: 'inline-flex',
+                                            alignItems: 'center',
+                                            gap: '4px',
+                                            padding: '6px 12px',
+                                            fontSize: '11px',
+                                            fontWeight: 600,
+                                            color: 'var(--gai-text-muted)',
+                                            backgroundColor: 'var(--gai-bg-tertiary)',
+                                            border: '1px solid var(--gai-border-color)',
+                                            borderRadius: '6px',
+                                            cursor: 'pointer',
+                                        }}
+                                    >
+                                        <RefreshCw size={12} />
+                                        Retry
+                                    </button>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Auto-scroll anchor */}
+                        <div ref={bottomRef} />
+                    </div>
                 )}
             </div>
 
-            {/* GitHub Rate Limit Modal */}
-            <GitHubTokenModal
-                isOpen={showRateLimitModal}
-                onClose={() => setShowRateLimitModal(false)}
-                onSaveToken={saveGitHubToken}
-                onRetry={() => startAnalysis(true)}
-            />
+            {/* Chat Input - Fixed at bottom when analysis complete */}
+            {status === 'complete' && (
+                <form
+                    onSubmit={handleSendMessage}
+                    style={{
+                        display: 'flex',
+                        gap: '10px',
+                        padding: '16px 20px',
+                        borderTop: '1px solid var(--gai-border-muted)',
+                        background: 'var(--gai-bg-secondary)',
+                    }}
+                >
+                    <input
+                        ref={chatInputRef}
+                        type="text"
+                        value={chatInput}
+                        onChange={(e) => setChatInput(e.target.value)}
+                        placeholder="Ask a follow-up question..."
+                        disabled={isChatLoading}
+                        style={{
+                            flex: 1,
+                            padding: '12px 18px',
+                            fontSize: '14px',
+                            border: '2px solid var(--gai-border-color)',
+                            borderRadius: '24px',
+                            backgroundColor: 'var(--gai-bg-primary)',
+                            color: 'var(--gai-text-color)',
+                            outline: 'none',
+                            transition: 'all 0.2s ease',
+                        }}
+                        onFocus={(e) => {
+                            e.currentTarget.style.borderColor = '#8b5cf6';
+                            e.currentTarget.style.boxShadow = '0 0 0 3px rgba(139, 92, 246, 0.15)';
+                        }}
+                        onBlur={(e) => {
+                            e.currentTarget.style.borderColor = 'var(--gai-border-color)';
+                            e.currentTarget.style.boxShadow = 'none';
+                        }}
+                    />
+                    <button
+                        type="submit"
+                        disabled={!chatInput.trim() || isChatLoading}
+                        style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            width: '48px',
+                            height: '48px',
+                            border: 'none',
+                            borderRadius: '50%',
+                            background: chatInput.trim() && !isChatLoading
+                                ? 'linear-gradient(135deg, #8b5cf6 0%, #6366f1 100%)'
+                                : 'var(--gai-bg-tertiary)',
+                            color: chatInput.trim() && !isChatLoading ? '#ffffff' : 'var(--gai-text-muted)',
+                            cursor: chatInput.trim() && !isChatLoading ? 'pointer' : 'not-allowed',
+                            transition: 'all 0.2s ease',
+                            boxShadow: chatInput.trim() && !isChatLoading
+                                ? '0 4px 12px rgba(139, 92, 246, 0.3)'
+                                : 'none',
+                        }}
+                        onMouseEnter={(e) => {
+                            if (chatInput.trim() && !isChatLoading) {
+                                e.currentTarget.style.transform = 'scale(1.05)';
+                                e.currentTarget.style.boxShadow = '0 6px 16px rgba(139, 92, 246, 0.4)';
+                            }
+                        }}
+                        onMouseLeave={(e) => {
+                            e.currentTarget.style.transform = 'scale(1)';
+                            if (chatInput.trim() && !isChatLoading) {
+                                e.currentTarget.style.boxShadow = '0 4px 12px rgba(139, 92, 246, 0.3)';
+                            }
+                        }}
+                    >
+                        {isChatLoading ? <Loader2 size={20} className="gai-spinner" /> : <Send size={20} />}
+                    </button>
+                </form>
+            )}
 
             <style>{`
                 @keyframes gai-blink {
                     0%, 50% { opacity: 1; }
                     51%, 100% { opacity: 0; }
+                }
+                @keyframes gai-fade-in {
+                    from { opacity: 0; transform: translateY(10px); }
+                    to { opacity: 1; transform: translateY(0); }
                 }
             `}</style>
         </>

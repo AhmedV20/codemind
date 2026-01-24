@@ -1,9 +1,10 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Brain, Loader2, CheckCircle } from 'lucide-react';
 import { useAnalysisStore } from '../hooks/useAnalysis';
 
 const AnalyzeButton: React.FC = () => {
     const { status, hasCachedAnalysis, showPanel, checkCache, repoInfo } = useAnalysisStore();
+    const [isHovered, setIsHovered] = useState(false);
 
     // Check cache when repo info changes
     useEffect(() => {
@@ -19,86 +20,94 @@ const AnalyzeButton: React.FC = () => {
         showPanel();
     };
 
-    const getButtonContent = () => {
+    // Get status-based colors
+    const getColors = () => {
         if (isLoading) {
-            return (
-                <>
-                    <Loader2 className="gai-spinner" size={16} />
-                    <span>Analyzing...</span>
-                </>
-            );
+            return {
+                bg: '#3b82f6', // Blue
+                hoverBg: '#2563eb',
+                shadow: 'rgba(59, 130, 246, 0.3)',
+            };
         }
-
         if (hasAnalysis) {
-            return (
-                <>
-                    <CheckCircle size={16} />
-                    <span>View Analysis</span>
-                </>
-            );
+            return {
+                bg: '#10b981', // Green
+                hoverBg: '#059669',
+                shadow: 'rgba(16, 185, 129, 0.3)',
+            };
         }
-
-        return (
-            <>
-                <Brain size={16} />
-                <span>CodeMind</span>
-            </>
-        );
+        return {
+            bg: '#8b5cf6', // Purple
+            hoverBg: '#7c3aed',
+            shadow: 'rgba(139, 92, 246, 0.3)',
+        };
     };
 
-    // Liquid Glass button styles
-    const getButtonStyles = (): React.CSSProperties => {
-        const baseStyles: React.CSSProperties = {
-            display: 'inline-flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            gap: '7px',
-            height: '32px',
-            padding: '0 14px',
-            fontSize: '13px',
-            fontWeight: 500,
-            fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans", Helvetica, Arial, sans-serif',
-            letterSpacing: '0.01em',
-            lineHeight: '1',
-            whiteSpace: 'nowrap',
-            cursor: 'pointer',
-            border: 'none',
-            borderRadius: '5px',
-            transition: 'all 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
-            position: 'relative',
-            overflow: 'hidden',
-        };
+    const colors = getColors();
 
+    // Get button text based on state
+    const getButtonText = () => {
+        if (isLoading) return 'Analyzing...';
+        if (hasAnalysis) return 'View Analysis';
+        return 'CodeMind';
+    };
+
+    // Get icon based on state
+    const getIcon = () => {
         if (isLoading) {
-            return {
-                ...baseStyles,
-                background: 'linear-gradient(135deg, rgba(139, 92, 246, 0.9) 0%, rgba(99, 102, 241, 0.9) 100%)',
-                backdropFilter: 'blur(12px)',
-                color: '#ffffff',
-                boxShadow: '0 2px 12px rgba(139, 92, 246, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.2)',
-                opacity: 0.85,
-                cursor: 'wait',
-            };
+            return <Loader2 className="gai-btn-icon-svg gai-spinner" size={18} />;
         }
-
         if (hasAnalysis) {
-            return {
-                ...baseStyles,
-                background: 'linear-gradient(135deg, rgba(34, 197, 94, 0.9) 0%, rgba(22, 163, 74, 0.9) 100%)',
-                backdropFilter: 'blur(12px)',
-                color: '#ffffff',
-                boxShadow: '0 2px 12px rgba(34, 197, 94, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.2)',
-            };
+            return <CheckCircle className="gai-btn-icon-svg" size={18} />;
         }
+        return <Brain className="gai-btn-icon-svg" size={18} />;
+    };
 
-        // Default: Glass purple
-        return {
-            ...baseStyles,
-            background: 'linear-gradient(135deg, rgba(139, 92, 246, 0.9) 0%, rgba(99, 102, 241, 0.9) 50%, rgba(59, 130, 246, 0.9) 100%)',
-            backdropFilter: 'blur(12px)',
-            color: '#ffffff',
-            boxShadow: '0 2px 12px rgba(139, 92, 246, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.2)',
-        };
+    const buttonStyles: React.CSSProperties = {
+        display: 'inline-flex',
+        alignItems: 'center',
+        justifyContent: 'flex-start',
+        height: '36px',
+        padding: '0',
+        paddingLeft: '9px',
+        paddingRight: isHovered ? '14px' : '9px',
+        fontSize: '13px',
+        fontWeight: 600,
+        fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans", Helvetica, Arial, sans-serif',
+        letterSpacing: '0.01em',
+        lineHeight: '1',
+        whiteSpace: 'nowrap',
+        cursor: isLoading ? 'wait' : 'pointer',
+        border: 'none',
+        borderRadius: '8px',
+        transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+        position: 'relative',
+        overflow: 'hidden',
+        background: isHovered ? colors.hoverBg : colors.bg,
+        color: '#ffffff',
+        boxShadow: isHovered
+            ? `0 4px 12px ${colors.shadow}`
+            : `0 2px 8px ${colors.shadow}`,
+        transform: isHovered ? 'translateY(-1px)' : 'translateY(0)',
+    };
+
+    const iconContainerStyles: React.CSSProperties = {
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        width: '18px',
+        height: '18px',
+        flexShrink: 0,
+    };
+
+    const textStyles: React.CSSProperties = {
+        display: 'inline-block',
+        overflow: 'hidden',
+        maxWidth: isHovered ? '100px' : '0px',
+        opacity: isHovered ? 1 : 0,
+        marginLeft: isHovered ? '8px' : '0px',
+        transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+        whiteSpace: 'nowrap',
     };
 
     return (
@@ -107,27 +116,16 @@ const AnalyzeButton: React.FC = () => {
             className="gai-analyze-btn"
             aria-label={hasAnalysis ? "View Analysis" : "Open CodeMind"}
             title={hasAnalysis ? "View cached analysis" : "Open CodeMind - AI Repository Analyzer"}
-            style={getButtonStyles()}
-            onMouseEnter={(e) => {
-                if (!isLoading) {
-                    e.currentTarget.style.transform = 'translateY(-1px) scale(1.02)';
-                    if (hasAnalysis) {
-                        e.currentTarget.style.boxShadow = '0 6px 20px rgba(34, 197, 94, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.3)';
-                    } else {
-                        e.currentTarget.style.boxShadow = '0 6px 20px rgba(139, 92, 246, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.3)';
-                    }
-                }
-            }}
-            onMouseLeave={(e) => {
-                e.currentTarget.style.transform = 'translateY(0) scale(1)';
-                if (hasAnalysis) {
-                    e.currentTarget.style.boxShadow = '0 2px 12px rgba(34, 197, 94, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.2)';
-                } else {
-                    e.currentTarget.style.boxShadow = '0 2px 12px rgba(139, 92, 246, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.2)';
-                }
-            }}
+            style={buttonStyles}
+            onMouseEnter={() => setIsHovered(true)}
+            onMouseLeave={() => setIsHovered(false)}
         >
-            {getButtonContent()}
+            <span style={iconContainerStyles}>
+                {getIcon()}
+            </span>
+            <span style={textStyles}>
+                {getButtonText()}
+            </span>
         </button>
     );
 };

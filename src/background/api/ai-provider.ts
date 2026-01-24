@@ -45,6 +45,8 @@ export interface ChatContext {
     repoData: RepositoryData;
     analysis: Analysis;
     history: Array<{ role: 'user' | 'assistant'; content: string }>;
+    conversationMemory?: import('@shared/types').ConversationMemory;
+    optimizedPrompt?: string;
 }
 
 /**
@@ -311,7 +313,7 @@ ${releases[0].assets.length > 0 ? releases[0].assets.map(a => `- **${a.name}** (
  * Build a chat prompt for follow-up questions
  */
 export function buildChatPrompt(question: string, context: ChatContext): string {
-    const { repoData, analysis, history } = context;
+    const { repoData, analysis, history, conversationMemory, optimizedPrompt } = context;
 
     // Build conversation history
     const historyText = history
@@ -319,16 +321,22 @@ export function buildChatPrompt(question: string, context: ChatContext): string 
         .map(msg => `**${msg.role === 'user' ? 'User' : 'CodeMind'}:** ${msg.content}`)
         .join('\n\n');
 
-    // Include key files in context for better answers
+    // Build memory context from previous conversations
+    const memoryContext = conversationMemory && conversationMemory.facts.length > 0
+        ? `\n\n## Previous Conversation Context\n${conversationMemory.facts.slice(-5).map(f => `- ${f.fact}`).join('\n')}`
+        : '';
+
+    // Use CACHED files (not trying to fetch missing ones) - show with ✅
     const keyFilesContext = repoData.keyFiles.length > 0
-        ? `\n\nKey files available for reference:\n${repoData.keyFiles.map(f => `- ${f.path}`).join('\n')}`
+        ? `\n\n## Files Analyzed in Repository\n${repoData.keyFiles.map(f => `✅ ${f.path}`).join('\n')}`
         : '';
 
     return `You are CodeMind, an AI assistant helping users understand the GitHub repository "${repoData.metadata.fullName}".
 
-## Repository Summary
-${analysis.content.slice(0, 5000)}
+## Repository Analysis Summary
+${analysis.content.slice(0, 3000)}
 ${keyFilesContext}
+${memoryContext}
 
 ${history.length > 0 ? `## Previous Conversation\n${historyText}\n` : ''}
 
@@ -336,13 +344,12 @@ ${history.length > 0 ? `## Previous Conversation\n${historyText}\n` : ''}
 **User asks:** "${question}"
 
 ## Instructions
-1. Answer based on the repository data and your previous analysis
-2. Be specific and reference actual files/features when relevant
-3. If you need to show code or commands, use proper markdown code blocks
-4. If you're not sure about something, say so clearly
-5. Keep your response focused and helpful
-6. For technical questions, provide accurate details
-7. For beginner questions, explain concepts simply
+1. Answer based on the analyzed files and previous analysis
+2. Reference ONLY the files listed above (marked with ✅)
+3. Use conversation memory to provide continuity
+4. Be specific and accurate
+5. If a file wasn't analyzed, say so clearly - don't make assumptions
+6. Keep responses focused and helpful
 
 Provide your response:`;
 }

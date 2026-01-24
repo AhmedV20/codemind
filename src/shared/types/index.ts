@@ -7,6 +7,17 @@ export interface RepositoryInfo {
     repo: string;
     branch: string;
     url: string;
+    scrapedMetadata?: {
+        description: string | null;
+        stars: number;
+        forks: number;
+        watchers: number;
+        topics: string[];
+        language: string | null;
+        license: string | null;
+        isArchived: boolean;
+        isFork: boolean;
+    };
 }
 
 export interface RepositoryMetadata {
@@ -80,6 +91,11 @@ export interface Analysis {
     generatedAt: string;
     provider: AIProvider;
     fromCache: boolean;
+    // NEW: Store strategy result and metadata for chat
+    strategyResult?: StrategyResult;
+    metadata?: RepositoryMetadata;
+    optimizedPrompt?: string;
+    conversationMemory?: ConversationMemory;
 }
 
 export interface AnalysisSections {
@@ -90,6 +106,8 @@ export interface AnalysisSections {
     techStack: TechStackItem[];
     gettingStarted: string;
     downloadInfo?: DownloadInfo;
+    downloadAndInstall?: string;
+    projectStatus?: string;
 }
 
 export interface TechStackItem {
@@ -109,6 +127,22 @@ export interface PlatformDownload {
     filename: string;
     downloadUrl: string;
     size: number;
+}
+
+// ============================================
+// Conversation Memory Types
+// ============================================
+
+export interface ConversationMemory {
+    sessionId: string;
+    facts: Array<{
+        fact: string;
+        confidence: number;
+        addedAt: number;
+    }>;
+    topics: string[];
+    questionsAsked: string[];
+    lastUpdated: number;
 }
 
 // ============================================
@@ -137,6 +171,7 @@ export enum AIProvider {
     GEMINI = 'gemini',
     HUGGINGFACE = 'huggingface',
     OPENROUTER = 'openrouter',
+    OPENAI = 'openai',
 }
 
 export interface ProviderConfig {
@@ -164,6 +199,10 @@ export interface AIProviderSettings {
             apiKey: string;
             model: string;
         };
+        [AIProvider.OPENAI]: {
+            apiKey: string;
+            model: string;
+        };
     };
 }
 
@@ -177,6 +216,7 @@ export interface ExtensionSettings {
         depth: 'quick' | 'standard' | 'deep';
         autoAnalyze: boolean;
         cacheDuration: number; // in hours
+        strategyConfig: AnalysisStrategyConfig;  // NEW
     };
     ui: {
         panelPosition: 'right' | 'left';
@@ -186,6 +226,39 @@ export interface ExtensionSettings {
     github: {
         token: string;
     };
+}
+
+// ============================================
+// Analysis Strategy Types
+// ============================================
+
+export enum AnalysisStrategyType {
+    CLIENT_SIDE = 'client_side',
+    BACKEND = 'backend',
+    HYBRID = 'hybrid',
+}
+
+export interface AnalysisStrategyConfig {
+    type: AnalysisStrategyType;
+    tokenBudget: number;        // Max tokens to use
+    maxFiles: number;           // Max files to include
+    priorityThreshold: number;  // Min priority score for files
+}
+
+export interface FileScore {
+    path: string;
+    size: number;
+    score: number;
+    category: 'docs' | 'config' | 'source' | 'test' | 'other';
+}
+
+export interface StrategyResult {
+    files: KeyFile[];
+    structure: RepositoryStructure;
+    tokenEstimate: number;
+    coverage: 'full' | 'partial' | 'minimal';
+    filesAnalyzed: number;
+    totalFiles: number;
 }
 
 // ============================================

@@ -72,7 +72,7 @@ export class CacheManager {
     }
 
     /**
-     * Store analysis in cache
+     * Store analysis in cache with enhanced data for chat
      */
     async set(
         owner: string,
@@ -99,6 +99,42 @@ export class CacheManager {
             await chrome.storage.local.set({ [storageKey]: entry });
         } catch (error) {
             console.error('[CacheManager] Error writing cache:', error);
+        }
+    }
+
+    /**
+     * Update conversation memory in cache
+     */
+    async updateConversationMemory(
+        owner: string,
+        repo: string,
+        branch: string,
+        memoryUpdate: Partial<import('@shared/types').ConversationMemory>
+    ): Promise<void> {
+        const cached = await this.get(owner, repo, branch);
+        if (!cached) return;
+
+        // Initialize conversation memory if it doesn't exist
+        if (!cached.strategyResult) {
+            console.warn('[CacheManager] Cannot update memory: no strategyResult in cache');
+            return;
+        }
+
+        const key = this.buildKey(owner, repo, branch);
+        const storageKey = `${STORAGE_KEYS.CACHE_PREFIX}${key}`;
+        const result = await chrome.storage.local.get(storageKey);
+        const entry = result[storageKey] as CacheEntry<Analysis>;
+
+        if (entry) {
+            // Update the analysis data with new memory
+            entry.data = {
+                ...entry.data,
+                conversationMemory: memoryUpdate as any,
+            };
+
+            // Update both memory and storage
+            this.memoryCache.set(key, entry);
+            await chrome.storage.local.set({ [storageKey]: entry });
         }
     }
 
@@ -150,6 +186,54 @@ export class CacheManager {
             return { count: cacheItems.length, sizeBytes };
         } catch {
             return { count: 0, sizeBytes: 0 };
+        }
+    }
+
+    /**
+     * Get list of all cached repositories
+     */
+    async getCachedRepos(): Promise<Array<{ fullName: string; branch: string; expiresAt: number; sizeBytes: number }>> {
+        try {
+            const allItems = await chrome.storage.local.get(null);
+            const repos: Array<{ fullName: string; branch: string; expiresAt: number; sizeBytes: number }> = [];
+
+            for (const [key, entry] of Object.entries(allItems)) {
+                if (key.startsWith(STORAGE_KEYS.CACHE_PREFIX)) {
+                    const keyPart = key.replace(STORAGE_KEYS.CACHE_PREFIX, '');
+                    const colonIndex = keyPart.lastIndexOf(':');
+                    if (colonIndex > 0) {
+                        const fullName = keyPart.substring(0, colonIndex);
+                        const branch = keyPart.substring(colonIndex + 1);
+                        const cacheEntry = entry as CacheEntry<Analysis>;
+                        repos.push({
+                            fullName,
+                            branch,
+                            expiresAt: cacheEntry.expiresAt,
+                            sizeBytes: JSON.stringify(entry).length,
+                        });
+                    }
+                }
+            }
+
+            return repos;
+        } catch (error) {
+            console.error('[CacheManager] Error getting cached repos:', error);
+            return [];
+        }
+    }
+
+    /**
+     * Delete cache for a specific repository (by fullName which includes branch)
+     */
+    async deleteRepo(fullName: string, branch: string): Promise<void> {
+        const key = `${fullName}:${branch}`;
+        this.memoryCache.delete(key);
+
+        try {
+            const storageKey = `${STORAGE_KEYS.CACHE_PREFIX}${key}`;
+            await chrome.storage.local.remove(storageKey);
+        } catch (error) {
+            console.error('[CacheManager] Error deleting repo cache:', error);
         }
     }
 
