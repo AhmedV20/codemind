@@ -8,7 +8,7 @@
 <div align="center">
 
 [![Stars](https://img.shields.io/github/stars/AhmedV20/codemind?style=social)](https://github.com/AhmedV20/codemind/stargazers)
-[![Version](https://img.shields.io/badge/version-1.2.0-blue)](https://github.com/AhmedV20/codemind/releases)
+[![Version](https://img.shields.io/badge/version-1.2.1-blue)](https://github.com/AhmedV20/codemind/releases)
 [![Build](https://img.shields.io/github/actions/workflow/status/AhmedV20/codemind/ci.yml?label=CI/Build)](https://github.com/AhmedV20/codemind/actions)
 [![Privacy](https://img.shields.io/badge/Privacy-Protected-green)](PRIVACY.md)
 [![License](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
@@ -99,6 +99,11 @@ CodeMind is a powerful browser extension that uses AI to instantly understand an
 | **OpenRouter** | ✅ Yes | Access 100+ models (DeepSeek, Qwen, etc.) |
 | **Claude** | ❌ Paid | Anthropic's Claude models |
 | **HuggingFace** | ✅ Yes | Open-source models |
+
+### v1.2.1 Highlights
+- 🌐 **Edge Browser Support** — Fixed extension not working on Microsoft Edge
+- ⏱️ **Improved Timing** — Increased injection timeout for slower browsers
+- 🔍 **URL Fallback** — Added URL pattern validation for better reliability
 
 ### v1.2.0 Highlights
 - 🤖 **OpenAI Support** — GPT-4o integration with streaming

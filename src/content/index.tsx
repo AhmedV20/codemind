@@ -5,7 +5,7 @@ import './styles/global.css';
 import { scrapeRepositoryMetadata, scrapeDefaultBranch } from './utils/domScraper';
 
 // Configuration
-const INJECTION_TIMEOUT = 500;
+const INJECTION_TIMEOUT = 1000;
 const BUTTON_CONTAINER_ID = 'github-ai-analyzer-root';
 
 // Check if we're on a valid GitHub repository page
@@ -24,7 +24,25 @@ function isRepositoryPage(): boolean {
         document.querySelector('.UnderlineNav-item') ||
         document.querySelector('.reponav-item');
 
-    return !!repoNav;
+    // If DOM check fails, fall back to URL pattern validation (fixes Edge timing issue)
+    if (!repoNav) {
+        // URL pattern: github.com/owner/repo or github.com/owner/repo/...
+        // Third path segment should not be a known GitHub route
+        const knownGitHubRoutes = ['tree', 'blob', 'edit', 'commits', 'pulls', 'issues', 'actions', 'projects', 'wiki', 'security', 'insights', 'settings', 'new', 'pull', 'blame', 'compare'];
+        const thirdSegmentIsRoute = pathParts.length > 2 && knownGitHubRoutes.includes(pathParts[2]);
+
+        // If we have exactly 2 segments (owner/repo) or third segment is not a known route, it's a repo
+        const isValidRepoUrl = pathParts.length === 2 || (pathParts.length > 2 && !thirdSegmentIsRoute);
+
+        if (isValidRepoUrl) {
+            console.log('[CodeMind] DOM nav not found, but URL matches repo pattern, proceeding');
+            return true;
+        }
+
+        return false;
+    }
+
+    return true;
 }
 
 // Extract repository information from the page URL and DOM

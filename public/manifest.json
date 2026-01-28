@@ -1,7 +1,7 @@
 {
     "manifest_version": 3,
     "name": "CodeMind - AI Repository Analyzer",
-    "version": "1.2.0",
+    "version": "1.2.1",
     "description": "Understand any GitHub repository in seconds with AI-powered analysis.",
     "icons": {
         "16": "icons/icon16.png",
